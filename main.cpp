@@ -60,6 +60,7 @@
 #include <SDL_ttf.h>
 #include "objects.h"
 #include "menu.h"
+//#include "graphical_elements.h"
 
 #define WW 940
 #define WH 730
@@ -589,7 +590,7 @@ int dynamitee(fish* g[])
 
 info game()
 {
-	const char* files[] = { "images/ships/boat.png", "images/ships/boat.png", "images/ships/small_ship.png", "images/ships/small_ship.png", "images/ships/small_ship.png", "images/ships/ship.png" };
+	const char* files[] = { "images/ships/boat_s.png", "images/ships/boat_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/ship_s.png" };
 	const int points[] = { 1,1,1,2,2,3};
 
 	//Для выбора концовки
@@ -711,11 +712,11 @@ info game()
 		{
 			for (i = 0; i < 10; i++)
 			{
-				if (g[i] == NULL)
+				if (g[i] == NULL) // если корабля нет
 				{
-					if (rand() % 900 == 1) g[i] = makenew(files, points, test); //Создание новой рыбы
+					if (rand() % 900 == 1) g[i] = makenew(files, points, test); //Создание нового корабля
 				}
-				else
+				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
 					fflag = g[i]->move(player->getY() + 29, player->getzac()); //Движение

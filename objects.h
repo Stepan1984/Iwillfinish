@@ -149,7 +149,7 @@ public:
 		texture = exem;
 		speed = sp;
 		points = point;
-		part = {1000, 0, 1000, 400};
+		part = {180, 0, 180, 90}; // 180, 0 , 180 ,90
 	}
 	 ~Rfish()
 	{
@@ -185,7 +185,7 @@ public:
 		texture = exem;
 		speed = sp;
 		points = point;
-		part = { 0, 0, 1000, 400};
+		part = { 0, 0, 180, 90};
 	}
 	 ~Lfish()
 	{
