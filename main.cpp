@@ -14,11 +14,10 @@
 #include "menu.h"
 
 
-#define WW 940
-#define WH 730
-#define HWH 315
-#define WL 255
-#define LH 100
+#define WW 940 // ширина окна
+#define WH 730 // высота окна
+#define HWH 315 // половина высоты окна
+#define WL 255 // линия воды
 
 using namespace std;
 
@@ -28,9 +27,6 @@ SDL_Window* window = NULL;
 SDL_Surface* screenSurface = NULL;
 //Указатель на рендер
 SDL_Renderer* render = NULL;
-//Флаг на динамит
-bool flag_d_used = false;	//Что динамит был использован (если да, то проигрывается плохая концовка)
-bool flag_d_catch = false;	//Что динамит был пойман (доставлен на сушу и готов к использования)
 
 const Uint8* keys = SDL_GetKeyboardState(NULL);
 
@@ -51,7 +47,7 @@ typedef struct {
 //Запуск СДЛ
 bool start();
 //Создание нового объекта в реке
-fish* makenew(const char*[], const int[], SDL_Texture*);
+ship* makenew(const char*[], const int[], SDL_Texture*);
 //Работа с файлом
 bool makefile(sdata**, int);
 sdata** readfile(int);
@@ -71,7 +67,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	info ufo;
-	ufo = startm(); //Cтартовое меню
+	//ufo = startm(); //Cтартовое меню
 	
 	if (ufo.quit) menu(ufo.usrername, tlist);
 	makefile(tlist, 10);
@@ -175,7 +171,7 @@ void sortnadd(sdata** tlist, sdata tmp)
 
 bool showrecords(sdata** tlist, staticgrafelem* fon)
 {
-	staticgrafelem b({ HWW - 766/2, 100, 766, 492 }, "textures/r.png", render);
+	staticgrafelem b({ HWW - 766 / 2, 100, 766, 492 }, "images/message.png", render);
 	button exit("Назад", 50, 0, 490, render, screenSurface);
 	exit.setcolor({ 0,0,0 });
 	exit.setcenter(0);
@@ -227,7 +223,7 @@ bool showsprav(staticgrafelem* fon)
 	SDL_Event event;
 	SDL_PollEvent(&event);
 
-	staticgrafelem b({ HWW - 766 / 2, 100, 766, 492 }, "textures/r.png", render);
+	staticgrafelem b({ HWW - 766 / 2, 100, 766, 492 }, "images/message.png", render);
 	button** knopka;
 	knopka = new button*[3];
 	knopka[0] = new button("Назад", 50, 0, 490, render, screenSurface);
@@ -499,14 +495,14 @@ void menu(string nname, sdata** tlist)
 }
 
 //Создание нового объекта в реке, NULL - не создался
-fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
+ship* makenew(const char* types[], const int scores[], SDL_Texture* image)
 {
 	char i = rand() % 100; //Для выбора создаваемого объекта
 	
 	bool naprav = rand() % 2; //Лево или право
 	char speed = 2 + rand() % 7; //скорость
 	int x = naprav ? -180 : WW;
-	fish* q = NULL;
+	ship* q = NULL;
 	char vid = 0;
 	if (i < 30) vid = 0;
 	if (i >= 30 && i < 50) vid = 1;
@@ -517,37 +513,15 @@ fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	if (!(rand() % 3)) vid = 5;
 	SDL_Rect dest = { x, WL, 180, 90 };
 	image = IMG_LoadTexture(render, types[vid]);
-	if (naprav) q = new Rfish(dest, image, speed, scores[vid]);
-	else q = new Lfish(dest, image, speed, scores[vid]);
+	if (naprav) q = new Rship(dest, image, speed, scores[vid]);
+	else q = new Lship(dest, image, speed, scores[vid]);
 	return q;
-}
-
-int dynamitee(fish* g[])
-{
-	int score = 0;
-	flag_d_used = true;
-	flag_d_catch = false;
-	for (int i = 0; i < 15; i++)
-	{
-		if (g[i])
-		{
-			g[i]->makehooked();
-			score += g[i]->getpoint() > 0 ? g[i]->getpoint() : 0;
-			delete g[i];
-			g[i] = NULL;
-		}
-	}
-	return score;
 }
 
 info game()
 {
 	const char* files[] = { "images/ships/boat_s.png", "images/ships/boat_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/ship_s.png" };
 	const int points[] = { 1,1,1,2,2,3};
-
-	//Для выбора концовки
-	const char* efiles[] = { "textures/dend.png", "textures/gend.png", "images/final.png", "textures / gend1.png"};
-	string elogos[] = {"Ой", "Отлично", "Отличная игра", "Опааааааа"};
 
 	staticgrafelem fon({ 0,0,WW,WH }, "images/background1.png", render); //Для главной игры
 	staticgrafelem pausetex({ HWW - 125, 200, 250, 300 }, "textures/pause.png", render);
@@ -558,32 +532,26 @@ info game()
 
 	//Крюк игрока
 	SDL_Texture* test = NULL;
-	test = IMG_LoadTexture(render, "images/torpedo.png");
-	hook* player = new hook(test, 50);
-
-	//Флаг на динамит
-	flag_d_used = false;	//Что динамит был использован (если да, то проигрывается плохая концовка)
-	flag_d_catch = false;	//Что динамит был пойман (доставлен на сушу и готов к использования)
+	hook* player = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 50);
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
-	int torpedos = 10;
-	short int score = 0;
+	bool paused = false; // флаг паузы
+	int torpedos = 10; // количество торпед
+	short int score = 0; // очки
 	int fflag = 0;
 
 	int i, tmp;
-	fish* g[15];
+	ship* g[15];
 	for (int i = 0; i < 15; i++)
 		g[i] = NULL;
 
 	wwt pauset("ПАУЗА", 40, 0, 210, render, screenSurface);
-	Timer timer(120000, -100, -100, 64, render, screenSurface);		//Таймер
 	wwt scores("0", 40, 10, 20, render, screenSurface);			//Счёт 
 	wwt torpsText("Торпеды:", 40, 60, 20, render, screenSurface);
 	wwt torps("10", 40, 250, 20, render, screenSurface);			//торпеды
 	pauset.setcenter(0);
 	torpsText.setcolor({ 0,0,0 });
-	timer.setcolor({ 0, 0, 0 });
 	scores.setcolor({ 0, 0, 0 });
 	torps.setcolor({ 0,0,0 });
 
@@ -595,8 +563,8 @@ info game()
 	// 4. Выход
 	button** knopka = new button*[5];
 	const char* c[] = { "Продолжить", "Справка", "Выход" };
-	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);		//Кнопка паузы
-	knopka[1] = new button("", 2, HWW + 600, 4, render, screenSurface);		//Кнопка для исользования динамита
+	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);	//Кнопка паузы
+	//knopka[1] = new button("", 2, HWW + 600, 4, render, screenSurface);		
 	for (i = 0; i < 3; i++)
 	{
 		knopka[i + 2] = new button(c[i], 40, 0, 254 + 44 * i, render, screenSurface);
@@ -604,24 +572,20 @@ info game()
 	}
 
 	knopka[0]->settexture("textures/pb.png", 50, 50);
-	knopka[1]->settexture("textures/db.png", 80, 80);
+	//knopka[1]->settexture("textures/db.png", 80, 80);
 
-	//Сама игра
-	timer.start();
-	//SDL_SetRenderDrawColor(render, 255, 128, 128, 255);
+	//игра
 	while (quit && eflag) 
 	{
 		fon.render(render);
-		if(player != NULL)
-		player->render(render);
+		if(player != NULL) // если торпеда существует
+			player->render(render);
 		
 		knopka[0]->render(render);
-		if (flag_d_catch)  knopka[1]->render(render);
 		torpsText.render(render);
 		scores.render(render);
 		torps.render(render);
-		eflag = eflag ? timer.trender(render) : eflag;
-		//SDL_RenderDrawLine(render, WW / 2, 17, WW / 2, player.getY() + 7);
+		eflag = eflag ? torpedos>0 : eflag;
 		//обработка событий (нажатий клавиш и т.п.)
 		while (SDL_PollEvent(&event)) 
 		{
@@ -629,38 +593,28 @@ info game()
 				quit = false;
 			if (event.type == SDL_KEYDOWN)
 			{
-				if (keys[SDL_SCANCODE_SPACE]) { timer.pause(); }
-				if (!timer.ispaused())
+				if (keys[SDL_SCANCODE_SPACE]) {  paused = true; }
+				if (!paused)
 				{
 					if (keys[SDL_SCANCODE_RETURN]) player->moveU();
-					if (flag_d_catch && keys[SDL_SCANCODE_POWER]) //Использование динамита через клавишу D
-					{
-						score += dynamitee(g);
-						scores.settext(to_string(score));
-					}
 				}
 			}
 			if (event.type == SDL_MOUSEBUTTONDOWN)
 			{
-				if (!timer.ispaused()) //Использование динамита через специальную кнопку на экране
+				if (!paused) // поставить на паузу
 				{
-					if (knopka[0]->getclick() != -1) timer.pause();
-					if (flag_d_catch && knopka[1]->getclick() != -1)
-					{
-						score += dynamitee(g);
-						scores.settext(to_string(score));
-					}
+					if (knopka[0]->getclick() != -1)  paused = true;
 				}
 				else
 				{
 					eflag = knopka[4]->getclick() == -1 ? eflag : false;
-					if (knopka[2]->getclick() != -1) timer.pause();
+					if (knopka[2]->getclick() != -1)  paused = false;
 					if (knopka[3]->getclick() != -1) {showsprav(&fon); fon.render(render);}
 				}
 			}
 		}
-		//Движение рыб, их создание, поимка и отрисовка
-		if (!timer.ispaused())
+		//Движение кораблей, их создание, поимка и отрисовка
+		if (!paused)
 		{
 			for (i = 0; i < 10; i++)
 			{
@@ -671,10 +625,10 @@ info game()
 				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move(player->getY() + 29, player->getzac()); //Движение
+					fflag = g[i]->move(player->getY() , player->getzac()); //Движение // +29
 					if (fflag == -1) //проверка на поимку
 					{
-						player->setzacep();
+						player->setzacep(true);
 					}
 					if (!fflag) //проверка на уход за край/в улов
 					{
@@ -686,11 +640,14 @@ info game()
 						{
 							torpedos--;
 							torps.settext(to_string(torpedos));
-							delete player;
+							//delete player;
+							
 							if (torpedos > 0)
-								player = new hook(test, 50); // создаём новую торпеду
-							/*player.setcoords(WW / 2 - 40, WH - 225);
-							player.set_speed(30);*/
+							{
+								player->setY(WH - 225);
+								player->setlaunched(false);
+								player->setzacep(false);
+							}
 						}
 						delete g[i];
 						g[i] = NULL;
@@ -713,16 +670,10 @@ info game()
 	}
 	SDL_DestroyTexture(test);
 	SDL_SetRenderDrawColor(render, 0, 0, 0, 0);
-	//Концовка
-	if (flag_d_used) //Плохая концовка
-		i = 0;
-	else if (score > 1500) //Хорошая концовка
-		i = rand() % 10 ? 1 : 4;
-	else //Обычная концовка
-		i=2;
-	staticgrafelem efon({ HWW - 766 / 2, 100, 766, 492 }, efiles[i], render);
+
+	//staticgrafelem efon({ HWW - 766 / 2, 100, 766, 492 }, efiles[i], render); // картинка после победы
 	wwt escore(to_string(score), 40, 0, 492, render, screenSurface);	//Счёт
-	wwt logo(elogos[i], 40, 0, 600, render, screenSurface);				//Подбадривающая надпись
+	wwt logo("Отличная игра", 40, 0, 600, render, screenSurface);		//Подбадривающая надпись
 	escore.setcenter(0);
 	logo.setcenter(0);
 	eflag = true;
@@ -737,7 +688,7 @@ info game()
 		}
 		fon.render(render);
 		peredfon.render(render);
-		efon.render(render);
+		//efon.render(render);
 		escore.render(render);
 		logo.render(render);
 		SDL_RenderPresent(render);

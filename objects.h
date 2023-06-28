@@ -90,7 +90,7 @@ public:
 	}
 };
 
-class fish : public movavaibleelem
+class ship : public movavaibleelem
 {
 protected:
 	//true - пойман, false - не пойман
@@ -98,7 +98,7 @@ protected:
 	int points;
 	int rav;
 public:
-	fish(SDL_Rect c = {0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	ship(SDL_Rect c = {0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
 		hooked = false;
 		coord = c;
@@ -107,7 +107,7 @@ public:
 		points = point;
 		rav = 0;
 	}
-	 ~fish()
+	 ~ship()
 	{
 		SDL_DestroyTexture(texture);
 	}
@@ -138,11 +138,11 @@ public:
 	}
 };
 
-class Rfish : public fish
+class Rship : public ship
 {
 public:
 
-	Rfish(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * exem = NULL, int sp = 0, int point = 0)
+	Rship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * exem = NULL, int sp = 0, int point = 0)
 	{
 		hooked = false;
 		coord = c;
@@ -151,7 +151,7 @@ public:
 		points = point;
 		part = {180, 0, 180, 90}; // 180, 0 , 180 ,90
 	}
-	 ~Rfish()
+	 ~Rship()
 	{
 		SDL_DestroyTexture(texture);
 	}
@@ -165,7 +165,7 @@ public:
 			{
 				rav = hy - coord.y;
 				hooked = true;
-				return -1;
+				return 0;
 			}
 		}
 		if (!hooked) coord.x += speed;
@@ -174,11 +174,11 @@ public:
 	}
 };
 
-class Lfish : public fish
+class Lship : public ship
 {
 public:
 
-	Lfish(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	Lship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
 		hooked = false;
 		coord = c;
@@ -187,7 +187,7 @@ public:
 		points = point;
 		part = { 0, 0, 180, 90};
 	}
-	 ~Lfish()
+	 ~Lship()
 	{
 		SDL_DestroyTexture(texture);
 	}
@@ -197,11 +197,13 @@ public:
 		{
 			if (hooked) // если пойман
 				this->setY(hy); // устанавливаем координату торпеды
-			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30) // если не пойман и 
+			if (!hooked && // если рыба не зацеплена
+				!z && // а крючёк зацеплен
+				fabs(hy - (coord.y + coord.h / 2)) < 30) // и и  
 			{
 				rav = hy - coord.y;
 				hooked = true;
-				return -1;
+				return 0;
 			}
 		}
 		if (!hooked) coord.x -= speed; // пока не пойман
@@ -220,9 +222,9 @@ public:
 	{
 		zacep = false;
 		coord = { WW/2 - 40, WH-225, 70, 70 }; //41 57
-		texture = exem;
+		texture = exem; // спрайт
 		speed = sp;
-		part = { 0, 0, 512, 512 };
+		part = { 0, 0, 512, 512 }; // часть картикни под рендер
 		launched = false;
 	}
 	void DEBUFINFO()
@@ -230,7 +232,7 @@ public:
 		cout << zacep << "/n" << coord.x << " " << coord.y << "/n" << coord.w << " " << coord.h << endl;
 		cout << texture << "/n" << endl;
 	}
-	hook(const hook& other)
+	hook(const hook& other) // конструктор копирования
 	{
 		zacep = other.zacep;
 		coord = other.coord;
@@ -238,22 +240,24 @@ public:
 		speed = other.speed;
 		part = other.part;
 	}
-	 ~hook()
+	 ~hook() // деструктор
 	{
-		//SDL_DestroyTexture(texture);
+		SDL_DestroyTexture(texture);
 	}
-	bool setzacep()
+
+	void setzacep(bool flag)
 	{
-		if (zacep) return false;
-		part = { 40, 0, 40, 57 };
-		speed = 50;
-		zacep = true;
-		return true;
+		zacep = flag;
 	}
 
 	bool getlaunched()
 	{
 		return launched;
+	}
+
+	void setlaunched(bool flag)
+	{
+		launched = flag;
 	}
 
 	void setcoords(int x, int y)
@@ -263,19 +267,16 @@ public:
 	}
 	bool moveU() override
 	{
+		//if(coord.y > WL ) // если ниже воды
 		launched = true;
-		if (coord.y + coord.h + 42 > WL) // если крюк ниже воды
+		if (coord.y + coord.h > WL) // если крюк ниже воды // +42
 			coord.y -= speed;
 		if (zacep && coord.y + coord.h / 2 < WL) // если крюк выше воды и зацеп 
 		{
-			part = { 0, 0, 40, 57 };
+			//part = { 0, 0, 512, 512 }; // 40,57
 			zacep = false;
-			speed = 50;
+			//speed = 50;
 			return true;
-		}
-		else
-		{
-
 		}
 		
 		return false;
@@ -291,7 +292,7 @@ public:
 	}
 	void setY(int y) override
 	{
-		return;
+		coord.y = y;
 	}
 	int move(int y, bool z) override
 	{
@@ -306,48 +307,3 @@ public:
 		return zacep;
 	}
 };
-
-class dynamite : public fish
-{
-protected:
-	bool* flag;
-public:
-	dynamite(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, bool* fl = NULL)
-	{
-		hooked = false;
-		coord = c;
-		coord.x = 0;
-		texture = exem;
-		speed = sp;
-		rav = 0;
-		points = 0;
-		flag = fl;
-		part = { 0, 0, c.w, c.h };
-	}
-	 ~dynamite()
-	{
-		flag = NULL;
-		SDL_DestroyTexture(texture);
-	}
-	int move(int hy, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - поймали
-	{
-		if (coord.x > WW ) return 0;
-		if (hooked)
-		{
-			if (coord.y <= WL) { *flag = true; return 0; }
-			this->setY(hy);
-		}
-		else
-		{
-			if (!z && coord.x + coord.w - HWW > 0 && coord.x + coord.w - HWW < 40 && fabs(hy - (coord.y + coord.h / 2)) < 30)
-			{
-				rav = hy - coord.y;
-				hooked = true;
-				return -1;
-			}
-			coord.x += speed;
-		}
-		return 1;
-	}
-};
-
