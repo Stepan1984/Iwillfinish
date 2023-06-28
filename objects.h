@@ -6,7 +6,7 @@ using namespace std;
 #define WW 940 
 #define HWW 470
 #define WH 730
-#define WL 120
+#define WL 345
 
 
 class staticgrafelem //
@@ -80,7 +80,7 @@ public:
 		speed = sp;
 	}
 	virtual void setY(int y) = 0;
-	virtual int move(int hy, bool z) = 0;
+	virtual int move(int ty, int tx, bool z) = 0;
 	virtual bool moveU() = 0;
 	virtual bool moveD() = 0;
 	bool render(SDL_Renderer* rend)
@@ -96,16 +96,16 @@ protected:
 	//true - пойман, false - не пойман
 	bool hooked; 
 	int points;
-	int rav;
+
 public:
-	ship(SDL_Rect c = {0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	ship(SDL_Rect c = {0, 0, 180, 90}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
 		hooked = false;
 		coord = c;
 		texture = exem;
 		speed = sp;
 		points = point;
-		rav = 0;
+
 	}
 	 ~ship()
 	{
@@ -117,7 +117,7 @@ public:
 	}
 	void setY(int y) override
 	{
-		coord.y = y - rav;
+		coord.y = y;
 	}
 	int getpoint()
 	{
@@ -138,7 +138,7 @@ public:
 	}
 };
 
-class Rship : public ship
+class Rship : public ship //корабль, плывущий направо
 {
 public:
 
@@ -155,30 +155,31 @@ public:
 	{
 		SDL_DestroyTexture(texture);
 	}
-	int move(int hy, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - поймали
+	int move(int ty, int tx, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - взорвали
 	{
-		if (coord.x + coord.w - HWW > 0 && coord.x + coord.w - HWW < 40)
+		if (coord.x + coord.w - HWW > 0 && coord.x - HWW < HWW + coord.w)
 		{
-			if (hooked)
-				this->setY(hy);
-			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
+			if (!hooked && 
+				!z && 
+				(ty <= WL + 30 && ty >= WL - coord.h) &&
+				(tx + 70 <= coord.x + coord.w && tx >= coord.x))
 			{
-				rav = hy - coord.y;
+				
 				hooked = true;
-				return 0;
+				return -1;
 			}
 		}
 		if (!hooked) coord.x += speed;
-		if (coord.x > WW || coord.y <= WL) return 0;
+		if (coord.x > WW ) return 0;
 		return 1;
 	}
 };
 
-class Lship : public ship
+class Lship : public ship // корабль, плывущий налево
 {
 public:
 
-	Lship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	Lship(SDL_Rect c = { 0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
 		hooked = false;
 		coord = c;
@@ -191,23 +192,21 @@ public:
 	{
 		SDL_DestroyTexture(texture);
 	}
-	int move(int hy, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - поймали
+	int move(int ty, int tx, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - взорвали
 	{
-		if (coord.x - HWW < 0 && coord.x - HWW > -40)
+		if (coord.x - HWW < 0 && coord.x - HWW > -coord.w + 1) //если корабль слева в центре экрана
 		{
-			if (hooked) // если пойман
-				this->setY(hy); // устанавливаем координату торпеды
-			if (!hooked && // если рыба не зацеплена
-				!z && // а крючёк зацеплен
-				fabs(hy - (coord.y + coord.h / 2)) < 30) // и и  
+			if (!hooked && // если корабль не задет
+				!z && // а торпеда с кораблём соприкоснулась
+				(ty <= WL + 30 && ty >= WL - coord.h) &&
+				(tx + 70 <= coord.x + coord.w && tx >= coord.x)) // и 
 			{
-				rav = hy - coord.y;
 				hooked = true;
-				return 0;
+				return -1;
 			}
 		}
-		if (!hooked) coord.x -= speed; // пока не пойман
-		if (coord.x + coord.w < 0 || coord.y <= WL) return 0; // если дошли до края или оказались над водой - удаляем
+		if (!hooked) coord.x -= speed; // пока не взорван
+		if (coord.x + coord.w < 0 ) return 0; // если дошли до края - удаляем
 		return 1;
 	}
 };
@@ -218,7 +217,7 @@ protected:
 	bool zacep;
 	bool launched;
 public:
-	hook(SDL_Texture* exem = NULL, int sp = 50)
+	hook(SDL_Texture* exem = NULL, int sp = 40)
 	{
 		zacep = false;
 		coord = { WW/2 - 40, WH-225, 70, 70 }; //41 57
@@ -294,13 +293,17 @@ public:
 	{
 		coord.y = y;
 	}
-	int move(int y, bool z) override
+	int move(int ty, int tx, bool z) override
 	{
 		return 1;
 	}
 	int getY()
 	{
 		return coord.y;
+	}
+	int getX()
+	{
+		return coord.x;
 	}
 	bool getzac()
 	{

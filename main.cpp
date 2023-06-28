@@ -17,7 +17,7 @@
 #define WW 940 // ширина окна
 #define WH 730 // высота окна
 #define HWH 315 // половина высоты окна
-#define WL 255 // линия воды
+#define WL 345 // линия воды 255
 
 using namespace std;
 
@@ -511,7 +511,7 @@ ship* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	if (i >= 80 && i < 92) vid = 4;
 	if (i >= 92)
 	if (!(rand() % 3)) vid = 5;
-	SDL_Rect dest = { x, WL, 180, 90 };
+	SDL_Rect dest = { x, WL - 90, 180, 90 };
 	image = IMG_LoadTexture(render, types[vid]);
 	if (naprav) q = new Rship(dest, image, speed, scores[vid]);
 	else q = new Lship(dest, image, speed, scores[vid]);
@@ -532,7 +532,7 @@ info game()
 
 	//Крюк игрока
 	SDL_Texture* test = NULL;
-	hook* player = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 50);
+	hook* player = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 40);
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
@@ -625,16 +625,16 @@ info game()
 				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move(player->getY() , player->getzac()); //Движение // +29
-					if (fflag == -1) //проверка на поимку
+					fflag = g[i]->move(player->getY(), player->getX(), player->getzac()); //Движение корабля // +29
+					if (fflag == -1) //проверка на уничтожение
 					{
 						player->setzacep(true);
 					}
-					if (!fflag) //проверка на уход за край/в улов
+					if (fflag == 0 || fflag == -1) //проверка на уход за край/ подсчёт очков
 					{
 						
 						tmp = score;
-						score += g[i]->getpoint(); // получаем очки, если есть рыба hooked
+						score += g[i]->getpoint(); // получаем очки, если есть корабль hooked
 						scores.settext(to_string(score));
 						if (score != tmp)
 						{
@@ -642,7 +642,7 @@ info game()
 							torps.settext(to_string(torpedos));
 							//delete player;
 							
-							if (torpedos > 0)
+							if (torpedos > 0) // если ещё есть торпеды
 							{
 								player->setY(WH - 225);
 								player->setlaunched(false);
