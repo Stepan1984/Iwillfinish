@@ -134,7 +134,7 @@ bool start()
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return true;
 	if (TTF_Init() == -1) return true;
 
-	window = SDL_CreateWindow("Fish&ca", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WW, WH, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Tilt", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WW, WH, SDL_WINDOW_SHOWN);
 	if (window == NULL) return true;
 	render = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (render == NULL) return true;
@@ -164,6 +164,7 @@ bool makefile(sdata** dlist, int nop)
 	file.close();
 	return true;
 }
+
 sdata** readfile(int nop = 0)
 {
 	ifstream file("f.dat");
@@ -196,6 +197,7 @@ sdata** readfile(int nop = 0)
 	file.close();
 	return dlist;
 }
+
 void sortnadd(sdata** tlist, sdata tmp)
 {
 	sdata* tmp1 = new sdata;
@@ -204,7 +206,6 @@ void sortnadd(sdata** tlist, sdata tmp)
 	int i = -1;
 	while (++i < 10 && tlist[i] && tlist[i]->points > tmp.points);
 	if (i == 10) return;
-	cout << "FUCK YEAH" << endl;
 	sdata* temp = tlist[i];
 	tlist[i] = tmp1;
 	while (++i < 10 && tlist[i-1])
@@ -278,7 +279,7 @@ bool showsprav(staticgrafelem* fon)
 	knopka = new button*[3];
 	knopka[0] = new button("Назад", 50, 0, 490, render, screenSurface);
 	knopka[1] = new button("Правила", 50, 0, 200, render, screenSurface);
-	knopka[2] = new button("Бестиарий", 50, 0, 254, render, screenSurface);
+	knopka[2] = new button("Справочник", 50, 0, 254, render, screenSurface);
 	int i;
 	for (i = 0; i < 3; i++)
 	{
@@ -287,19 +288,19 @@ bool showsprav(staticgrafelem* fon)
 		knopka[i]->setindex(i);
 	}
 	wwt** texts = new wwt*[3];
-	texts[0] = new wwt("Рыбалка", 50, 0, 143, render, screenSurface);
+	texts[0] = new wwt("Шип дестроер", 50, 0, 143, render, screenSurface);
 	texts[1] = new wwt("", 16, HWW - 766 / 2 + 86, 192, render, screenSurface);
 	texts[2] = new button("", 10, HWW - 766 / 2 + 86, 192, render, screenSurface);
 	
-	dynamic_cast<button*>(texts[2])->settexture("textures/bestiary.png", 595, 300);
+	dynamic_cast<button*>(texts[2])->settexture("images/ships.png", 595, 300);
 	dynamic_cast<button*>(texts[2])->makeparted(595, 300);
 
 	texts[0]->setcenter(0);
 	stringstream ss;
-	ss << "Цель игры: набрать наибольшее количество очков;\n     Очки даются за поимку рыбы,\n     За поимку мусора очки снимаются;\n\n" <<
-		"Одновременно на крючке может быть только\nодин объект. После того как рыба была снята\nс крючка (для этого её надо поднять на сушу),\n"<<
-		"крючок надо поднять ещё выше, чтобы заменить червя.\nКрючок управляется клавишами w/s, клавиша d\nактивирует динамит, если он был пойман прежде.\nВремя игры 2 минуты.\n"<<
-		"Удачной ловли!                               -Fis" ;
+	ss << "Цель игры: набрать наибольшее количество очков;\nОчки даются за уничтожение кораблей торпедами\n с подводной лодки,\n\n" <<
+		"Одновременно может быть запущена только одна торпеда.\n Корабли имеют разную стоимость от 1 до 3 очков,\n а также различаются по скорости.\n\n"<<
+		"Торпеда запускается на ENTER.\nНа стрельбу отведено 10 торпед.\n"<<
+		"Be careful" ;
 	texts[1]->settext(ss.str());
 	texts[1]->setmaxW(10);
 	
@@ -413,12 +414,13 @@ info entername(staticgrafelem* fon)
 
 info startm()
 {
-	staticgrafelem zast({ 0,0,WW,WH }, "textures/zast.png", render); //Для заставки
+	staticgrafelem zast({ 0,0,WW,WH }, "images/screenSaver.png", render); //Для заставки
 	
-	wwt name("О727Б Залесский А.Д.", 35, 4, WH - 50, render, screenSurface);
-	wwt title("РЫБАЛКА 0.1", 60, 0, 20, render, screenSurface);
+	wwt name("О727Б Виноградов С.Д.", 35, 4, WH - 50, render, screenSurface);
+	wwt title("Шип дестроер", 60, 0, 20, render, screenSurface);
 	title.setcenter(0);
 	title.setcolor({ 0,0,0 });
+	name.setcolor({ 0,0,0 });
 	
 	info dat;
 	dat.quit = true;
@@ -454,7 +456,7 @@ info startm()
 void menu(string nname, sdata** tlist)
 {
 	//Фоны
-	staticgrafelem menufon({ 0,0,WW,WH }, "textures/zast.png", render);
+	staticgrafelem menufon({ 0,0,WW,WH }, "images/screenSaver.png", render);
 	//кнопки
 	button** knopka;
 	knopka = new button*[7];
@@ -471,6 +473,7 @@ void menu(string nname, sdata** tlist)
 	{
 		knopka[i] = new button(buttontext[i], 40, 20, 230 + 45 * i, render, screenSurface);
 		knopka[i]->setindex(i);
+		knopka[i]->setcolor({ 0,0,0 });
 	}
 
 	sdata tmp = { 0, nname };
@@ -548,7 +551,7 @@ fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	char i = rand() % 100; //Для выбора создаваемого объекта
 	char l = rand() % 6; //Для выбора уровня воды
 	bool naprav = rand() % 2; //Лево или право
-	char speed = 2 + rand() % 7;
+	char speed = 2 + rand() % 7; //скорость
 	int x = naprav ? -180 : WW;
 	fish* q = NULL;
 	char vid = 0;
@@ -558,16 +561,7 @@ fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	if (i >= 65 && i < 80) vid = 3;
 	if (i >= 80 && i < 92) vid = 4;
 	if (i >= 92)
-	{
-		if (!(rand() % 3)) vid = 5;
-		else
-		{
-			vid = 6;
-			image = IMG_LoadTexture(render, types[vid]);
-			q = new dynamite({ -70, WL + LH * l, 67, 73 }, image, speed, &flag_d_catch);
-			return q;
-		}
-	}
+	if (!(rand() % 3)) vid = 5;
 	SDL_Rect dest = { x, WL + LH * l, 180, 90 };
 	image = IMG_LoadTexture(render, types[vid]);
 	if (naprav) q = new Rfish(dest, image, speed, scores[vid]);
@@ -595,14 +589,14 @@ int dynamitee(fish* g[])
 
 info game()
 {
-	const char* files[] = { "textures/f1.png", "textures/f2.png", "textures/f3.png", "textures/tr2.png", "textures/tr.png", "textures/tr3.png", "textures/d.png" };
-	const int points[] = { 100, 200, 300, -150, -250, -666, 0 };
+	const char* files[] = { "images/ships/boat.png", "images/ships/boat.png", "images/ships/small_ship.png", "images/ships/small_ship.png", "images/ships/small_ship.png", "images/ships/ship.png" };
+	const int points[] = { 1,1,1,2,2,3};
 
 	//Для выбора концовки
 	const char* efiles[] = { "textures/dend.png", "textures/gend.png", "textures/cend.png", "textures / gend1.png"};
-	string elogos[] = {"Вас поймали", "Отличный улов", "В хорошей рыбалке главное не улов", "Язь! Ребята, язь здоровенный!"};
+	string elogos[] = {"Ой", "Отлично", "И так сойдёт", "Опааааааа"};
 
-	staticgrafelem fon({ 0,0,WW,WH }, "textures/fon.png", render); //Для главной игры
+	staticgrafelem fon({ 0,0,WW,WH }, "images/background.png", render); //Для главной игры
 	staticgrafelem pausetex({ HWW - 125, 200, 250, 300 }, "textures/pause.png", render);
 	staticgrafelem peredfon({ 0, WH - 314, WW, 314 }, "textures/peredfon.png", render);
 
@@ -611,7 +605,7 @@ info game()
 
 	//Крюк игрока
 	SDL_Texture* test = NULL;
-	test = IMG_LoadTexture(render, "textures/hook.png");
+	test = IMG_LoadTexture(render, "images/torpedo.png");
 	hook player(test, 5);
 
 	//Флаг на динамит

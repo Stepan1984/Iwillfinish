@@ -94,13 +94,13 @@ class fish : public movavaibleelem
 {
 protected:
 	//true - пойман, false - не пойман
-	bool destroyed; 
+	bool hooked; 
 	int points;
 	int rav;
 public:
 	fish(SDL_Rect c = {0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
-		destroyed = false;
+		hooked = false;
 		coord = c;
 		texture = exem;
 		speed = sp;
@@ -113,7 +113,7 @@ public:
 	}
 	void makehooked()
 	{
-		destroyed = destroyed ? false : true;
+		hooked = hooked ? false : true;
 	}
 	void setY(int y) override
 	{
@@ -121,18 +121,18 @@ public:
 	}
 	int getpoint()
 	{
-		return destroyed? points : 0;
+		return hooked? points : 0;
 	}
 	bool moveU() override
 	{
-		if (!destroyed) return true;
+		if (!hooked) return true;
 		coord.y -= speed;
 		if (coord.y <= WL) return false;
 		return true;
 	}
 	bool moveD() override
 	{
-		if (!destroyed) return true;
+		if (!hooked) return true;
 		if (coord.y + coord.h + speed <= WH) coord.y += speed;
 		return true;
 	}
@@ -144,7 +144,7 @@ public:
 
 	Rfish(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * exem = NULL, int sp = 0, int point = 0)
 	{
-		destroyed = false;
+		hooked = false;
 		coord = c;
 		texture = exem;
 		speed = sp;
@@ -159,16 +159,16 @@ public:
 	{
 		if (coord.x + coord.w - HWW > 0 && coord.x + coord.w - HWW < 40)
 		{
-			if (destroyed)
+			if (hooked)
 				this->setY(hy);
-			if (!destroyed && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
+			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
 			{
 				rav = hy - coord.y;
-				destroyed = true;
+				hooked = true;
 				return -1;
 			}
 		}
-		if (!destroyed) coord.x += speed;
+		if (!hooked) coord.x += speed;
 		if (coord.x > WW || coord.y <= WL) return 0;
 		return 1;
 	}
@@ -180,7 +180,7 @@ public:
 
 	Lfish(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
-		destroyed = false;
+		hooked = false;
 		coord = c;
 		texture = exem;
 		speed = sp;
@@ -195,16 +195,16 @@ public:
 	{
 		if (coord.x - HWW < 0 && coord.x - HWW > -40)
 		{
-			if (destroyed)
+			if (hooked)
 				this->setY(hy);
-			if (!destroyed && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
+			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
 			{
 				rav = hy - coord.y;
-				destroyed = true;
+				hooked = true;
 				return -1;
 			}
 		}
-		if (!destroyed) coord.x -= speed;
+		if (!hooked) coord.x -= speed;
 		if (coord.x + coord.w < 0 || coord.y <= WL) return 0;
 		return 1;
 	}
@@ -294,7 +294,7 @@ protected:
 public:
 	dynamite(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, bool* fl = NULL)
 	{
-		destroyed = false;
+		hooked = false;
 		coord = c;
 		coord.x = 0;
 		texture = exem;
@@ -312,7 +312,7 @@ public:
 	int move(int hy, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - поймали
 	{
 		if (coord.x > WW) return 0;
-		if (destroyed)
+		if (hooked)
 		{
 			if (coord.y <= WL) { *flag = true; return 0; }
 			this->setY(hy);
@@ -322,59 +322,11 @@ public:
 			if (!z && coord.x + coord.w - HWW > 0 && coord.x + coord.w - HWW < 40 && fabs(hy - (coord.y + coord.h / 2)) < 30)
 			{
 				rav = hy - coord.y;
-				destroyed = true;
+				hooked = true;
 				return -1;
 			}
 			coord.x += speed;
 		}
 		return 1;
-	}
-};
-
-class ship : public movavaibleelem
-{
-protected:
-	//true - уничтожен, false - не уничтожен
-	bool destroyed;
-	int points;
-	int rav;
-public:
-	fish(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
-	{
-		destroyed = false;
-		coord = c;
-		texture = exem;
-		speed = sp;
-		points = point;
-		rav = 0;
-	}
-	~fish()
-	{
-		SDL_DestroyTexture(texture);
-	}
-	void makehooked()
-	{
-		destroyed = destroyed ? false : true;
-	}
-	void setY(int y) override
-	{
-		coord.y = y - rav;
-	}
-	int getpoint()
-	{
-		return destroyed ? points : 0;
-	}
-	bool moveU() override
-	{
-		if (!destroyed) return true;
-		coord.y -= speed;
-		if (coord.y <= WL) return false;
-		return true;
-	}
-	bool moveD() override
-	{
-		if (!destroyed) return true;
-		if (coord.y + coord.h + speed <= WH) coord.y += speed;
-		return true;
 	}
 };
