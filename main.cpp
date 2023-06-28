@@ -17,7 +17,8 @@
 #define WW 940 // ширина окна
 #define WH 730 // высота окна
 #define HWH 315 // половина высоты окна
-#define WL 345 // линия воды 255
+#define HWW 470 // половина ширины
+#define WL 345 // линия воды 
 
 using namespace std;
 
@@ -83,7 +84,7 @@ bool start()
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return true;
 	if (TTF_Init() == -1) return true;
 
-	window = SDL_CreateWindow("Tilt", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WW, WH, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Ships destroyer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WW, WH, SDL_WINDOW_SHOWN);
 	if (window == NULL) return true;
 	render = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (render == NULL) return true;
@@ -366,7 +367,7 @@ info startm()
 	staticgrafelem zast({ 0,0,WW,WH }, "images/screenSaver.png", render); //Для заставки
 	
 	wwt name("О727Б Виноградов С.Д.", 35, 4, WH - 50, render, screenSurface);
-	wwt title("Шип дестроер", 60, 0, 20, render, screenSurface);
+	wwt title("Шипс дестроер", 60, 0, 20, render, screenSurface);
 	title.setcenter(0);
 	title.setcolor({ 0,0,0 });
 	name.setcolor({ 0,0,0 });
@@ -523,7 +524,7 @@ info game()
 	const char* files[] = { "images/ships/boat_s.png", "images/ships/boat_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/ship_s.png" };
 	const int points[] = { 1,1,1,2,2,3};
 
-	staticgrafelem fon({ 0,0,WW,WH }, "images/background1.png", render); //Для главной игры
+	staticgrafelem fon({ 0,0,WW,WH }, "images/background.png", render); //Для главной игры
 	staticgrafelem pausetex({ HWW - 125, 200, 250, 300 }, "textures/pause.png", render);
 	staticgrafelem peredfon({ 0, WH - 314, WW, 314 }, "textures/peredfon.png", render);
 
@@ -532,7 +533,8 @@ info game()
 
 	//Крюк игрока
 	SDL_Texture* test = NULL;
-	hook* torpeda = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 40);
+	rocket* torpeda = new rocket(IMG_LoadTexture(render, "images/torpedo.png"), 30);
+	submarine* player = new submarine({HWW - 30, WL + 200, 90, 180}, IMG_LoadTexture(render, "images/oceanGateR.png"), 10); // создаём субмарину
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
@@ -557,14 +559,12 @@ info game()
 
 	//Кнопки
 	// 0. Пауза
-	// 1. Динамит
 	// 2. Продолжить
 	// 3. Справка
 	// 4. Выход
 	button** knopka = new button*[5];
 	const char* c[] = { "Продолжить", "Справка", "Выход" };
-	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);	//Кнопка паузы
-	//knopka[1] = new button("", 2, HWW + 600, 4, render, screenSurface);		
+	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);	//Кнопка паузы		
 	for (i = 0; i < 3; i++)
 	{
 		knopka[i + 2] = new button(c[i], 40, 0, 254 + 44 * i, render, screenSurface);
@@ -572,31 +572,31 @@ info game()
 	}
 
 	knopka[0]->settexture("textures/pb.png", 50, 50);
-	//knopka[1]->settexture("textures/db.png", 80, 80);
 
 	//игра
 	while (quit && eflag) 
 	{
 		fon.render(render);
-		if(torpeda != NULL) // если торпеда существует
+		player->render(render);
+		if (torpeda->getlaunched()) // если торпеда запущена
 		{
-			if (torpeda->getlaunched()) // если торпеда запущена
+			torpeda->render(render);// рисуем 
+			if(torpeda->moveU()) // двигаем
 			{
-				torpeda->render(render);// рисуем 
-				if(torpeda->moveU()) // двигаем
-				{
-					torpedos--;
-					torps.settext(to_string(torpedos));
+				torpedos--;
+				torps.settext(to_string(torpedos));
 
-					if (torpedos > 0) // если ещё есть торпеды
-					{
-						torpeda->setY(WH - 225);
-						torpeda->setlaunched(false);
-						torpeda->setzacep(false);
-					}
+				if (torpedos > 0) // если ещё есть торпеды
+				{
+					torpeda->setY(WH - 225);
+					torpeda->setlaunched(false);
+					torpeda->setzacep(false);
 				}
 			}
 		}
+		else
+			torpeda->setX(player->getX());
+
 		
 		knopka[0]->render(render);
 		torpsText.render(render);
@@ -610,21 +610,21 @@ info game()
 				quit = false;
 			if (event.type == SDL_KEYDOWN)
 			{
-				if (keys[SDL_SCANCODE_SPACE]) {  paused = true; }
+				if (keys[SDL_SCANCODE_RETURN]) {  paused = true; }
 				if (!paused)
 				{
-					if (keys[SDL_SCANCODE_RETURN]) // если нажали ENTER
+					if (keys[SDL_SCANCODE_SPACE]) // если нажали ENTER
 					{
 						if(!torpeda->getlaunched()) // если торпеда не летит
 							torpeda->moveU(); // запускаем
 					}
 					if(keys[SDL_SCANCODE_D])
 					{
-
+						player->moveR();
 					}
 					if (keys[SDL_SCANCODE_A])
 					{
-
+						player->moveL();
 					}
 				}
 			}
@@ -654,7 +654,7 @@ info game()
 				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move(torpeda->getY(), torpeda->getX(), torpeda->getzac()); //Движение корабля // +29
+					fflag = g[i]->move( torpeda->getX(), torpeda->getY(),torpeda->getW(), torpeda->getH(), torpeda->getspeed(), torpeda->getzac()); //Движение корабля // +29
 					if (fflag == -1) //проверка на уничтожение
 					{
 						torpeda->setzacep(true);
@@ -667,9 +667,8 @@ info game()
 						scores.settext(to_string(score));
 						if (score != tmp)
 						{
-							torpedos--;
+							torpedos--; // уменьшаем счётчик
 							torps.settext(to_string(torpedos));
-							//delete torpeda;
 							
 							if (torpedos > 0) // если ещё есть торпеды
 							{
