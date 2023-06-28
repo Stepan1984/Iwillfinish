@@ -149,7 +149,7 @@ public:
 		texture = exem;
 		speed = sp;
 		points = point;
-		part = {180, 0, 180, 90};
+		part = {1000, 0, 1000, 400};
 	}
 	 ~Rfish()
 	{
@@ -185,7 +185,7 @@ public:
 		texture = exem;
 		speed = sp;
 		points = point;
-		part = { 0, 0, 180, 90 };
+		part = { 0, 0, 1000, 400};
 	}
 	 ~Lfish()
 	{
@@ -195,17 +195,17 @@ public:
 	{
 		if (coord.x - HWW < 0 && coord.x - HWW > -40)
 		{
-			if (hooked)
-				this->setY(hy);
-			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30)
+			if (hooked) // если пойман
+				this->setY(hy); // устанавливаем координату торпеды
+			if (!hooked && !z && fabs(hy - (coord.y + coord.h / 2)) < 30) // если не пойман и 
 			{
 				rav = hy - coord.y;
 				hooked = true;
 				return -1;
 			}
 		}
-		if (!hooked) coord.x -= speed;
-		if (coord.x + coord.w < 0 || coord.y <= WL) return 0;
+		if (!hooked) coord.x -= speed; // пока не пойман
+		if (coord.x + coord.w < 0 || coord.y <= WL) return 0; // если дошли до края или оказались над водой - удаляем
 		return 1;
 	}
 };
@@ -214,14 +214,16 @@ class hook : public movavaibleelem
 {
 protected:
 	bool zacep;
+	bool launched;
 public:
-	hook(SDL_Texture* exem = NULL, int sp = 10)
+	hook(SDL_Texture* exem = NULL, int sp = 50)
 	{
 		zacep = false;
-		coord = { HWW - 24, WL, 41, 57 };
+		coord = { WW/2 - 40, WH-225, 70, 70 }; //41 57
 		texture = exem;
 		speed = sp;
-		part = { 0, 0, 40, 57 };
+		part = { 0, 0, 512, 512 };
+		launched = false;
 	}
 	void DEBUFINFO()
 	{
@@ -238,26 +240,44 @@ public:
 	}
 	 ~hook()
 	{
-		SDL_DestroyTexture(texture);
+		//SDL_DestroyTexture(texture);
 	}
 	bool setzacep()
 	{
 		if (zacep) return false;
 		part = { 40, 0, 40, 57 };
-		speed = 5;
+		speed = 50;
 		zacep = true;
 		return true;
 	}
+
+	bool getlaunched()
+	{
+		return launched;
+	}
+
+	void setcoords(int x, int y)
+	{
+		coord.x = x;
+		coord.y = y;
+	}
 	bool moveU() override
 	{
-		if (coord.y + coord.h + 42 > WL)
+		launched = true;
+		if (coord.y + coord.h + 42 > WL) // если крюк ниже воды
 			coord.y -= speed;
-		if (zacep && coord.y + coord.h / 2 < WL) {
+		if (zacep && coord.y + coord.h / 2 < WL) // если крюк выше воды и зацеп 
+		{
 			part = { 0, 0, 40, 57 };
 			zacep = false;
-			speed = 6;
+			speed = 50;
 			return true;
 		}
+		else
+		{
+
+		}
+		
 		return false;
 	}
 	bool moveD() override
@@ -311,7 +331,7 @@ public:
 	}
 	int move(int hy, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - поймали
 	{
-		if (coord.x > WW) return 0;
+		if (coord.x > WW ) return 0;
 		if (hooked)
 		{
 			if (coord.y <= WL) { *flag = true; return 0; }
@@ -330,3 +350,4 @@ public:
 		return 1;
 	}
 };
+

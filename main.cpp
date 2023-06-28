@@ -64,7 +64,7 @@
 #define WW 940
 #define WH 730
 #define HWH 315
-#define WL 130
+#define WL 255
 #define LH 100
 
 using namespace std;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	info ufo;
-	ufo = startm(); //Cтартовое меню
+	//ufo = startm(); //Cтартовое меню
 	
 	if (ufo.quit) menu(ufo.usrername, tlist);
 	makefile(tlist, 10);
@@ -549,7 +549,7 @@ void menu(string nname, sdata** tlist)
 fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
 {
 	char i = rand() % 100; //Для выбора создаваемого объекта
-	char l = rand() % 6; //Для выбора уровня воды
+	
 	bool naprav = rand() % 2; //Лево или право
 	char speed = 2 + rand() % 7; //скорость
 	int x = naprav ? -180 : WW;
@@ -557,12 +557,12 @@ fish* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	char vid = 0;
 	if (i < 30) vid = 0;
 	if (i >= 30 && i < 50) vid = 1;
-	if (i >= 50 && i < 65) { vid = 2; l = 3 + rand() % 3; }
+	if (i >= 50 && i < 65) { vid = 2;}
 	if (i >= 65 && i < 80) vid = 3;
 	if (i >= 80 && i < 92) vid = 4;
 	if (i >= 92)
 	if (!(rand() % 3)) vid = 5;
-	SDL_Rect dest = { x, WL + LH * l, 180, 90 };
+	SDL_Rect dest = { x, WL, 180, 90 };
 	image = IMG_LoadTexture(render, types[vid]);
 	if (naprav) q = new Rfish(dest, image, speed, scores[vid]);
 	else q = new Lfish(dest, image, speed, scores[vid]);
@@ -593,10 +593,10 @@ info game()
 	const int points[] = { 1,1,1,2,2,3};
 
 	//Для выбора концовки
-	const char* efiles[] = { "textures/dend.png", "textures/gend.png", "textures/cend.png", "textures / gend1.png"};
-	string elogos[] = {"Ой", "Отлично", "И так сойдёт", "Опааааааа"};
+	const char* efiles[] = { "textures/dend.png", "textures/gend.png", "images/final.png", "textures / gend1.png"};
+	string elogos[] = {"Ой", "Отлично", "Отличная игра", "Опааааааа"};
 
-	staticgrafelem fon({ 0,0,WW,WH }, "images/background.png", render); //Для главной игры
+	staticgrafelem fon({ 0,0,WW,WH }, "images/background1.png", render); //Для главной игры
 	staticgrafelem pausetex({ HWW - 125, 200, 250, 300 }, "textures/pause.png", render);
 	staticgrafelem peredfon({ 0, WH - 314, WW, 314 }, "textures/peredfon.png", render);
 
@@ -606,7 +606,7 @@ info game()
 	//Крюк игрока
 	SDL_Texture* test = NULL;
 	test = IMG_LoadTexture(render, "images/torpedo.png");
-	hook player(test, 5);
+	hook* player = new hook(test, 50);
 
 	//Флаг на динамит
 	flag_d_used = false;	//Что динамит был использован (если да, то проигрывается плохая концовка)
@@ -614,21 +614,25 @@ info game()
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
+	int torpedos = 10;
 	short int score = 0;
 	int fflag = 0;
 
-	int i;
+	int i, tmp;
 	fish* g[15];
 	for (int i = 0; i < 15; i++)
 		g[i] = NULL;
 
 	wwt pauset("ПАУЗА", 40, 0, 210, render, screenSurface);
-	Timer timer(120, 40, 60, 64, render, screenSurface);		//Таймер
-	wwt scores("0", 40, 60, 20, render, screenSurface);			//Счёт 
-
+	Timer timer(120000, -100, -100, 64, render, screenSurface);		//Таймер
+	wwt scores("0", 40, 10, 20, render, screenSurface);			//Счёт 
+	wwt torpsText("Торпеды:", 40, 60, 20, render, screenSurface);
+	wwt torps("10", 40, 250, 20, render, screenSurface);			//торпеды
 	pauset.setcenter(0);
+	torpsText.setcolor({ 0,0,0 });
 	timer.setcolor({ 0, 0, 0 });
 	scores.setcolor({ 0, 0, 0 });
+	torps.setcolor({ 0,0,0 });
 
 	//Кнопки
 	// 0. Пауза
@@ -638,8 +642,8 @@ info game()
 	// 4. Выход
 	button** knopka = new button*[5];
 	const char* c[] = { "Продолжить", "Справка", "Выход" };
-	knopka[0] = new button("", 2, HWW + 220, 4, render, screenSurface);		//Кнопка паузы
-	knopka[1] = new button("", 2, HWW + 304, 4, render, screenSurface);		//Кнопка для исользования динамита
+	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);		//Кнопка паузы
+	knopka[1] = new button("", 2, HWW + 600, 4, render, screenSurface);		//Кнопка для исользования динамита
 	for (i = 0; i < 3; i++)
 	{
 		knopka[i + 2] = new button(c[i], 40, 0, 254 + 44 * i, render, screenSurface);
@@ -651,15 +655,20 @@ info game()
 
 	//Сама игра
 	timer.start();
-	SDL_SetRenderDrawColor(render, 255, 128, 128, 255);
-	while (quit && eflag) {
+	//SDL_SetRenderDrawColor(render, 255, 128, 128, 255);
+	while (quit && eflag) 
+	{
 		fon.render(render);
-		player.render(render);
+		if(player != NULL)
+		player->render(render);
+		
 		knopka[0]->render(render);
 		if (flag_d_catch)  knopka[1]->render(render);
+		torpsText.render(render);
 		scores.render(render);
+		torps.render(render);
 		eflag = eflag ? timer.trender(render) : eflag;
-		SDL_RenderDrawLine(render, WW / 2, 17, WW / 2, player.getY() + 7);
+		//SDL_RenderDrawLine(render, WW / 2, 17, WW / 2, player.getY() + 7);
 		//обработка событий (нажатий клавиш и т.п.)
 		while (SDL_PollEvent(&event)) 
 		{
@@ -670,9 +679,8 @@ info game()
 				if (keys[SDL_SCANCODE_SPACE]) { timer.pause(); }
 				if (!timer.ispaused())
 				{
-					if (keys[SDL_SCANCODE_W]) player.moveU();
-					if (keys[SDL_SCANCODE_S]) player.moveD();
-					if (flag_d_catch && keys[SDL_SCANCODE_D]) //Использование динамита через клавишу D
+					if (keys[SDL_SCANCODE_RETURN]) player->moveU();
+					if (flag_d_catch && keys[SDL_SCANCODE_POWER]) //Использование динамита через клавишу D
 					{
 						score += dynamitee(g);
 						scores.settext(to_string(score));
@@ -701,7 +709,7 @@ info game()
 		//Движение рыб, их создание, поимка и отрисовка
 		if (!timer.ispaused())
 		{
-			for (i = 0; i < 15; i++)
+			for (i = 0; i < 10; i++)
 			{
 				if (g[i] == NULL)
 				{
@@ -710,15 +718,27 @@ info game()
 				else
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move(player.getY() + 29, player.getzac()); //Движение
+					fflag = g[i]->move(player->getY() + 29, player->getzac()); //Движение
 					if (fflag == -1) //проверка на поимку
 					{
-						player.setzacep();
+						player->setzacep();
 					}
 					if (!fflag) //проверка на уход за край/в улов
 					{
-						score += g[i]->getpoint();
+						
+						tmp = score;
+						score += g[i]->getpoint(); // получаем очки, если есть рыба hooked
 						scores.settext(to_string(score));
+						if (score != tmp)
+						{
+							torpedos--;
+							torps.settext(to_string(torpedos));
+							delete player;
+							if (torpedos > 0)
+								player = new hook(test, 50); // создаём новую торпеду
+							/*player.setcoords(WW / 2 - 40, WH - 225);
+							player.set_speed(30);*/
+						}
 						delete g[i];
 						g[i] = NULL;
 					}
@@ -738,6 +758,7 @@ info game()
 
 		SDL_Delay(20);
 	}
+	SDL_DestroyTexture(test);
 	SDL_SetRenderDrawColor(render, 0, 0, 0, 0);
 	//Концовка
 	if (flag_d_used) //Плохая концовка

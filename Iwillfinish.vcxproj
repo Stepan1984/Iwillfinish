@@ -137,9 +137,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="graphical_elements.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="graphical_elements.h" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="objects.h" />
   </ItemGroup>
