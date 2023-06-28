@@ -266,16 +266,18 @@ public:
 	}
 	bool moveU() override
 	{
-		//if(coord.y > WL ) // если ниже воды
-		launched = true;
-		if (coord.y + coord.h > WL) // если крюк ниже воды // +42
-			coord.y -= speed;
-		if (zacep && coord.y + coord.h / 2 < WL) // если крюк выше воды и зацеп 
-		{
-			//part = { 0, 0, 512, 512 }; // 40,57
-			zacep = false;
-			//speed = 50;
+		if (coord.y + coord.h <= 0)
 			return true;
+			
+		launched = true;
+		if (zacep) // если зацеп 
+		{
+			zacep = false;
+			return true;
+		}
+		else
+		{
+			coord.y -= speed;
 		}
 		
 		return false;

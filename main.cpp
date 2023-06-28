@@ -67,7 +67,7 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	info ufo;
-	//ufo = startm(); //Cтартовое меню
+	ufo = startm(); //Cтартовое меню
 	
 	if (ufo.quit) menu(ufo.usrername, tlist);
 	makefile(tlist, 10);
@@ -446,7 +446,7 @@ void menu(string nname, sdata** tlist)
 				{
 					vibor = knopka[0]->getclick() == -1 ? vibor : knopka[0]->getindex();
 				}
-				for ( i = 1; i < 7 && vibor == -1; i++ )
+				for ( i = 1; i < 6 && vibor == -1; i++ )
 				{
 					vibor = knopka[i]->getclick() == -1 ? vibor : knopka[i]->getindex();
 				}
@@ -532,7 +532,7 @@ info game()
 
 	//Крюк игрока
 	SDL_Texture* test = NULL;
-	hook* player = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 40);
+	hook* torpeda = new hook(IMG_LoadTexture(render, "images/torpedo.png"), 40);
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
@@ -548,8 +548,8 @@ info game()
 
 	wwt pauset("ПАУЗА", 40, 0, 210, render, screenSurface);
 	wwt scores("0", 40, 10, 20, render, screenSurface);			//Счёт 
-	wwt torpsText("Торпеды:", 40, 60, 20, render, screenSurface);
-	wwt torps("10", 40, 250, 20, render, screenSurface);			//торпеды
+	wwt torpsText("Торпеды:", 40, 80, 20, render, screenSurface);
+	wwt torps("10", 40, 270, 20, render, screenSurface);			//торпеды
 	pauset.setcenter(0);
 	torpsText.setcolor({ 0,0,0 });
 	scores.setcolor({ 0, 0, 0 });
@@ -578,8 +578,25 @@ info game()
 	while (quit && eflag) 
 	{
 		fon.render(render);
-		if(player != NULL) // если торпеда существует
-			player->render(render);
+		if(torpeda != NULL) // если торпеда существует
+		{
+			if (torpeda->getlaunched()) // если торпеда запущена
+			{
+				torpeda->render(render);// рисуем 
+				if(torpeda->moveU()) // двигаем
+				{
+					torpedos--;
+					torps.settext(to_string(torpedos));
+
+					if (torpedos > 0) // если ещё есть торпеды
+					{
+						torpeda->setY(WH - 225);
+						torpeda->setlaunched(false);
+						torpeda->setzacep(false);
+					}
+				}
+			}
+		}
 		
 		knopka[0]->render(render);
 		torpsText.render(render);
@@ -596,7 +613,19 @@ info game()
 				if (keys[SDL_SCANCODE_SPACE]) {  paused = true; }
 				if (!paused)
 				{
-					if (keys[SDL_SCANCODE_RETURN]) player->moveU();
+					if (keys[SDL_SCANCODE_RETURN]) // если нажали ENTER
+					{
+						if(!torpeda->getlaunched()) // если торпеда не летит
+							torpeda->moveU(); // запускаем
+					}
+					if(keys[SDL_SCANCODE_D])
+					{
+
+					}
+					if (keys[SDL_SCANCODE_A])
+					{
+
+					}
 				}
 			}
 			if (event.type == SDL_MOUSEBUTTONDOWN)
@@ -625,10 +654,10 @@ info game()
 				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move(player->getY(), player->getX(), player->getzac()); //Движение корабля // +29
+					fflag = g[i]->move(torpeda->getY(), torpeda->getX(), torpeda->getzac()); //Движение корабля // +29
 					if (fflag == -1) //проверка на уничтожение
 					{
-						player->setzacep(true);
+						torpeda->setzacep(true);
 					}
 					if (fflag == 0 || fflag == -1) //проверка на уход за край/ подсчёт очков
 					{
@@ -640,13 +669,13 @@ info game()
 						{
 							torpedos--;
 							torps.settext(to_string(torpedos));
-							//delete player;
+							//delete torpeda;
 							
 							if (torpedos > 0) // если ещё есть торпеды
 							{
-								player->setY(WH - 225);
-								player->setlaunched(false);
-								player->setzacep(false);
+								torpeda->setY(WH - 225);
+								torpeda->setlaunched(false);
+								torpeda->setzacep(false);
 							}
 						}
 						delete g[i];
