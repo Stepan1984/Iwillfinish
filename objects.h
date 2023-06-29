@@ -307,10 +307,6 @@ public:
 	{
 		SDL_DestroyTexture(texture);
 	}
-	void set_speed(int sp)
-	{
-		speed = sp;
-	}
 
 	void moveR()
 	{
