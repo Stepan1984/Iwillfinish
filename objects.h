@@ -1,145 +1,140 @@
 #pragma once
-#include <stdio.h>
-
 using namespace std;
 
-#define WW 940 
-#define HWW 470
-#define WH 730
-#define WL 345
+#include"constants.h"
 
 
-class staticgrafelem //
+class staticGraficalElement //
 {
 protected:
-	SDL_Rect coord;
+	SDL_Rect coordinates;
 	SDL_Texture* texture;
-	bool flag; //Заполненность всех уровней, true - все уровни заполнены
+	bool flag;
 public:
-	staticgrafelem(SDL_Rect c = { 0, 0, WW, WH }, string path = "fon.png", SDL_Renderer* render = NULL)
+	staticGraficalElement(SDL_Rect newCoords = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT }, string path = "images/background.png", SDL_Renderer* render = NULL)
 	{
 		texture = IMG_LoadTexture(render, &path[0]);
-		coord = c;
+		coordinates = newCoords;
 		flag = false;
-		SDL_RenderCopy(render, texture, &coord, &coord);
+		SDL_RenderCopy(render, texture, &coordinates, &coordinates);
 	}
-	~staticgrafelem()
+	~staticGraficalElement()
 	{
 		SDL_DestroyTexture(texture);
 	}
-	staticgrafelem(const staticgrafelem& other)
+	staticGraficalElement(const staticGraficalElement& other)
 	{
 		flag = other.flag;
-		coord = other.coord;
+		coordinates = other.coordinates;
 		texture = other.texture;
 	}
-	staticgrafelem& operator = (const staticgrafelem& other)
+	staticGraficalElement& operator = (const staticGraficalElement& other)
 	{
 		if (this == &other)
 			return *this;
-		coord = other.coord;
+		coordinates = other.coordinates;
 		flag = other.flag;
 		SDL_DestroyTexture(texture);
 		texture = other.texture;
 	}
 	bool render(SDL_Renderer* rend)
 	{
-		if (SDL_RenderCopy(rend, texture, NULL, &coord) < 0) return false;
+		if (SDL_RenderCopy(rend, texture, NULL, &coordinates) < 0) return false;
 		return true;
 	}
 };
 
-class movavaibleelem //Базовый класс "управляемо перемещаемый по экрану элемент"
+class dynamicElement //Базовый класс "управляемо перемещаемый по экрану элемент"
 {
 protected:
-	SDL_Rect coord;
+	SDL_Rect coordinates;
 	SDL_Rect part;
 	SDL_Texture* texture;
 	int speed;
 public:
 
-	movavaibleelem(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture* exem = NULL, int sp = 0)
+	dynamicElement(SDL_Rect newCoords = { 0, 0, 100, 100 }, SDL_Texture* newTexture = NULL, int newSpeed= 0)
 	{
-		coord = c;
-		texture = exem;
-		speed = sp;
+		coordinates = newCoords;
+		texture = newTexture;
+		speed = newSpeed;
 		part = { 0, 0, 0, 0 };
 	}
-	virtual ~movavaibleelem() { SDL_DestroyTexture(texture); }
-	movavaibleelem& operator = (const movavaibleelem& other)
+	virtual ~dynamicElement() { SDL_DestroyTexture(texture); }
+	dynamicElement& operator = (const dynamicElement& other)
 	{
 		if (this == &other)
 			return *this;
-		coord = other.coord;
+		coordinates = other.coordinates;
 		SDL_DestroyTexture(texture);
 		texture = other.texture;
 		speed = other.speed;
 	}
-	void set_speed(int sp)
+	void set_speed(int newSpeed)
 	{
-		speed = sp;
+		speed = newSpeed;
 	}
 	void setY(int y)
 	{
-		coord.y = y;
+		coordinates.y = y;
 	}
 	void setX(int x)
 	{
-		coord.x = x;
+		coordinates.x = x;
 	}
 	int getY()
 	{
-		return coord.y;
+		return coordinates.y;
 	}
 	int getX()
 	{
-		return coord.x;
+		return coordinates.x;
 	}
 	int getW()
 	{
-		return coord.w;
+		return coordinates.w;
 	}
 	int getH()
 	{
-		return coord.h;
+		return coordinates.h;
 	}
 	
 	bool render(SDL_Renderer* rend)
 	{
-		if (SDL_RenderCopy(rend, texture, &part, &coord) < 0) return false;
+		if (SDL_RenderCopy(rend, texture, &part, &coordinates) < 0) return false;
 		return true;
 	}
 };
 
-class ship : public movavaibleelem
+class ship : public dynamicElement
 {
 protected:
-	bool hooked; 
+	bool touched; 
 	int points;
 
 public:
-	ship(SDL_Rect c = {0, 0, 180, 90}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	ship(SDL_Rect c = {0, 0, 180, 90}, SDL_Texture* newTexture = NULL, int newSpeed = 0, int newPoints = 0)
 	{
-		hooked = false;
-		coord = c;
-		texture = exem;
-		speed = sp;
-		points = point;
+		touched = false;
+		coordinates = c;
+		texture = newTexture;
+		speed = newSpeed;
+		points = newPoints;
 
 	}
 	 ~ship()
 	{
 		SDL_DestroyTexture(texture);
 	}
-	void makehooked()
+	void MakeTouched()
 	{
-		hooked = hooked ? false : true;
+		touched = touched ? false : true;
 	}
-	int getpoint()
+	int GetPoint()
 	{
-		return hooked? points : 0;
+		return touched? points : 0;
 	}
-	virtual int move(int tx, int ty, int tw, int th, int ts, bool z) = 0;
+	virtual int Move(int tx, int ty, int tw, int th, int ts, bool z) = 0;
 };
 
 class Rship : public ship //корабль, плывущий направо
@@ -148,33 +143,30 @@ public:
 
 	Rship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * exem = NULL, int sp = 0, int point = 0)
 	{
-		hooked = false;
-		coord = c;
+		touched = false;
+		coordinates = c;
 		texture = exem;
 		speed = sp;
 		points = point;
-		part = {180, 0, 180, 90}; // 180, 0 , 180 ,90
+		part = {180, 0, 180, 90}; 
 	}
 	 ~Rship()
 	{
 		SDL_DestroyTexture(texture);
 	}
-	int move(int tx, int ty, int tw, int th, int ts, bool z) override //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - взорвали
+	int Move(int tx, int ty, int tw, int th, int ts, bool z) override 
 	{
-		//if (coord.x + coord.w - HWW > 0 && coord.x - HWW < HWW + coord.w)
-		//{
-			if (!hooked && 
+			if (!touched && 
 				!z && 
-				(ty <= WL + 35 && ty >= WL - coord.h) &&
-				(tx + tw <= coord.x + coord.w && tx >= coord.x))
+				(ty <= WATER_LINE + 35 && ty >= WATER_LINE - coordinates.h) &&
+				(tx + tw <= coordinates.x + coordinates.w && tx >= coordinates.x))
 			{
 				
-				hooked = true;
+				touched = true;
 				return -1;
 			}
-		//}
-		if (!hooked) coord.x += speed;
-		if (coord.x > WW ) return 0;
+		if (!touched) coordinates.x += speed;
+		if (coordinates.x > WINDOW_WIDTH ) return 0;
 		return 1;
 	}
 };
@@ -185,8 +177,8 @@ public:
 
 	Lship(SDL_Rect c = { 0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
 	{
-		hooked = false;
-		coord = c;
+		touched = false;
+		coordinates = c;
 		texture = exem;
 		speed = sp;
 		points = point;
@@ -196,44 +188,41 @@ public:
 	{
 		SDL_DestroyTexture(texture);
 	}
-	int move(int tx, int ty, int tw, int th, int ts,  bool z) //1 - смогли двинуться; 0 - дошли до края, пора удалять; -1 - взорвали
+	int Move(int tx, int ty, int tw, int th, int ts,  bool z) 
 	{
-		//if (coord.x - HWW < 0 && coord.x - HWW > -coord.w + 1) //если корабль слева в центре экрана
-		//{
-			if (!hooked && 
+			if (!touched && 
 				!z && 
-				(ty <= WL + 30 && ty >= WL - coord.h) &&
-				(tx + tw <= coord.x + coord.w && tx >= coord.x)) // и 
+				(ty <= WATER_LINE + 30 && ty >= WATER_LINE - coordinates.h) &&
+				(tx + tw <= coordinates.x + coordinates.w && tx >= coordinates.x))  
 			{
-				hooked = true;
+				touched = true;
 				return -1;
 			}
-		//}
-		if (!hooked) coord.x -= speed; // пока не взорван
-		if (coord.x + coord.w < 0 ) return 0; // если дошли до края - удаляем
+		if (!touched) coordinates.x -= speed; 
+		if (coordinates.x + coordinates.w < 0 ) return 0; 
 		return 1;
 	}
 };
 
-class rocket : public movavaibleelem
+class rocket : public dynamicElement
 {
 protected:
-	bool zacep;
+	bool collision;
 	bool launched;
 public:
-	rocket(SDL_Texture* exem = NULL, int sp = 40)
+	rocket(SDL_Texture* newTexture = NULL, int newSpeed = 40)
 	{
-		zacep = false;
-		coord = { WW/2 - 40, WH-225, 70, 70 }; //41 57
-		texture = exem; // спрайт
-		speed = sp;
+		collision = false;
+		coordinates = { WINDOW_WIDTH/2 - 40, WINDOW_HEIGHT-225, 70, 70 }; 
+		texture = newTexture; // спрайт
+		speed = newSpeed;
 		part = { 0, 0, 512, 512 }; // часть картикни под рендер
 		launched = false;
 	}
 	rocket(const rocket& other) // конструктор копирования
 	{
-		zacep = other.zacep;
-		coord = other.coord;
+		collision = other.collision;
+		coordinates = other.coordinates;
 		texture = other.texture;
 		speed = other.speed;
 		part = other.part;
@@ -243,62 +232,57 @@ public:
 		SDL_DestroyTexture(texture);
 	}
 
-	void setzacep(bool flag)
+	void SetCollision(bool flag)
 	{
-		zacep = flag;
+		collision = flag;
 	}
 
-	bool getlaunched()
+	bool GetLaunched()
 	{
 		return launched;
 	}
 
-	void setlaunched(bool flag)
+	void SetLaunched(bool flag)
 	{
 		launched = flag;
 	}
 
-	void setcoords(int x, int y)
+	bool MoveU()
 	{
-		coord.x = x;
-		coord.y = y;
-	}
-	bool moveU()
-	{
-		if (coord.y + coord.h <= 0)
+		if (coordinates.y + coordinates.h <= 0)
 			return true;
 			
 		launched = true;
-		if (zacep) // если зацеп 
+		if (collision) // если соприкосновение 
 		{
-			zacep = false;
+			collision = false;
 			return true;
 		}
 		else
 		{
-			coord.y -= speed;
+			coordinates.y -= speed;
 		}
 		
 		return false;
 	}
 
-	bool getzac()
+	bool GetCollision()
 	{
-		return zacep;
+		return collision;
 	}
 
-	int getspeed()
+	int GetSpeed()
 	{
 		return speed;
 	}
 };
 
-class submarine: public movavaibleelem
+class submarine: public dynamicElement
 {
 public:
 	submarine(SDL_Rect c = { 0, 0, 180, 90 }, SDL_Texture* exem = NULL, int sp = 0)
 	{
-		coord = c;
+		coordinates = c;
 		texture = exem;
 		speed = sp;
 		part = { 0,0,683, 1294 };
@@ -308,15 +292,15 @@ public:
 		SDL_DestroyTexture(texture);
 	}
 
-	void moveR()
+	void MoveR()
 	{
-		if (WW - coord.x + coord.w >= speed)
-			coord.x += speed;
+		if (WINDOW_WIDTH - coordinates.x + coordinates.w >= speed)
+			coordinates.x += speed;
 	}
 
-	void moveL()
+	void MoveL()
 	{
-		if ( coord.x >= speed)
-			coord.x -= speed;
+		if ( coordinates.x >= speed)
+			coordinates.x -= speed;
 	}
 };

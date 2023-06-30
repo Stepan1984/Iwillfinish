@@ -1,51 +1,45 @@
 #pragma once
 
-//better-vcr_0.ttf
-//DejaVuMarkup.ttf
+#include"constants.h"
 
-#define WW 940
-#define WH 730
-#define HWH 315
-#define HWW 470
-
-class wwt
+class textWindow
 {
 protected:
 	SDL_Color color;
 	TTF_Font* font;
 	string text;
 	int size;
-	int lsize;
-	int ssize;
+	int letterSize;
+	int lineSize;
 	int letters;
-	int stroks;
-	int maxw = 20000;
+	int lines;
+	int maxWidth = 20000;
 
 	SDL_Texture* texture;
-	SDL_Rect coord;
+	SDL_Rect coordinates;
 	SDL_Rect* part;
 	SDL_Surface* surface = NULL;
 	SDL_Renderer* rend = NULL;
-	void crtexture()
+	void CreateTexture()
 	{
 		SDL_DestroyTexture(texture);
-		surface = TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, min(letters * lsize, maxw)+200 );
+		surface = TTF_RenderUTF8_Blended_Wrapped(font, text.c_str(), color, min(letters * letterSize, maxWidth)+200 );
 		texture = SDL_CreateTextureFromSurface(rend, surface);
 		SDL_FreeSurface(surface);
 	}
 public:
-	wwt(string intext = "\0", int insize = 0, int x = 0, int y = 0, SDL_Renderer* inrender = NULL, SDL_Surface* insurface = NULL)
+	textWindow(string newText = "\0", int newSize = 0, int x = 0, int y = 0, SDL_Renderer* newRenderer = NULL, SDL_Surface* newSurface = NULL)
 	{
-		stroks = 1;
-		lsize = insize * 0.6;
+		lines = 1;
+		letterSize = newSize * 0.6;
 		letters = 0;
 		color = { 255, 255, 255 };
-		size = insize;
-		text = intext;
+		size = newSize;
+		text = newText;
 		font = TTF_OpenFont("better-vcr_0.ttf", size);
-		coord.x = x;
-		coord.y = y;
-		coord.h = size;
+		coordinates.x = x;
+		coordinates.y = y;
+		coordinates.h = size;
 		part = NULL;
 		int lenght = 0;
 		for (int i = 0; i < text.length(); i++)
@@ -53,68 +47,63 @@ public:
 			if ((int)text[i] != -48 && (int)text[i] != -47) letters++;
 			if (text[i] == '\n')
 			{
-				ssize = --lenght > ssize ? lenght : ssize;
+				lineSize = --lenght > lineSize ? lenght : lineSize;
 				letters--;
 				lenght = 0;
-				stroks++;
+				lines++;
 			}
 			lenght++;
 		}
-		coord.h = size * stroks + 0.5*size*(stroks-1);
-		coord.w = letters * lsize;
-		surface = insurface;
-		rend = inrender;
-		crtexture();
+		coordinates.h = size * lines + 0.5*size*(lines-1);
+		coordinates.w = letters * letterSize;
+		surface = newSurface;
+		rend = newRenderer;
+		CreateTexture();
 	}
-	virtual ~wwt()
+	virtual ~textWindow()
 	{
 		surface = NULL;
 		rend = NULL;
 		SDL_DestroyTexture(texture);
 		TTF_CloseFont(font);
 	}
-	void setY(int x)
+	void SetY(int y)
 	{
-		coord.y = x;
+		coordinates.y = y;
 	}
-	void setcenter(int x)
+	void SetCenterOffset(int x)
 	{
-		coord.x = HWW - coord.w / 2 + x;
+		coordinates.x = HALF_WINDOW_WIDTH - coordinates.w / 2 + x;
 	}
-	void setcoord(int x, int y)
+	void SetColor(SDL_Color newColor)
 	{
-		coord.x = x;
-		coord.y = y;
+		color = newColor;
+		CreateTexture();
 	}
-	void setcolor(SDL_Color incolor)
-	{
-		color = incolor;
-		crtexture();
-	}
-	void settext(string intext)
+	void SetText(string newText)
 	{
 		text.clear();
-		text = intext;
+		text = newText;
 		letters = 0;
-		stroks = 1;
+		lines = 1;
 		int lenght = 0;
 		for (int i = 0; i < text.length(); i++)
 		{
 			if ((int)text[i] != -48 && (int)text[i] != -47) letters++;
 			if (text[i] == '\n')
 			{
-				ssize = --lenght > ssize ? lenght : ssize;
+				lineSize = --lenght > lineSize ? lenght : lineSize;
 				letters--;
 				lenght = 0;
-				stroks++;
+				lines++;
 			}
 			lenght++;
 		}
-		coord.h = size * stroks + 0.5 * size * (stroks - 1);
-		coord.w = letters * lsize;
-		crtexture();
+		coordinates.h = size * lines + 0.5 * size * (lines - 1);
+		coordinates.w = letters * letterSize;
+		CreateTexture();
 	}
-	void makeparted(int w, int h)
+	void SetRenderingPart(int w, int h)
 	{
 		part = new SDL_Rect;
 		part->x = 0;
@@ -122,121 +111,116 @@ public:
 		part->h = h;
 		part->w = w;
 	}
-	void setmaxW(int w)
+	void SetMaxWidth(int w)
 	{
-		maxw = w;
-		cout << maxw << endl;
+		maxWidth = w;
 	}
-	string gettext()
+	string GetText()
 	{
 		return text;
 	}
-	int getlength()
+	int GetLength()
 	{
 		return text.length();
 	}
-	bool render(SDL_Renderer* rendering)
+	bool render(SDL_Renderer* renderer)
 	{
-		SDL_RenderCopy(rendering, texture, part, &coord);
+		SDL_RenderCopy(renderer, texture, part, &coordinates);
 		return true;
 	}
 };
 
-//изменяемый (в т.ч. пользователем) текст
-class chatext : public wwt
+class dynamicTextWindow : public textWindow
 {
 protected:
-	int maxlet = 10;
-	bool centred = false;
+	int maxLetters = 10;
+	bool centered = false;
 public:
-	chatext(int insize = 0, int x = 0, int y = 0, SDL_Renderer* inrender = NULL, SDL_Surface* insurface = NULL) : wwt("", insize, x, y, inrender, insurface)
+	dynamicTextWindow(int newSize = 0, int x = 0, int y = 0, SDL_Renderer* newRenderer = NULL, SDL_Surface* newSurface = NULL) : textWindow("", newSize, x, y, newRenderer, newSurface)
 	{
 		text.clear();
 	}
-	~chatext()
+	~dynamicTextWindow()
 	{ }
-	void setcentred()
+	void SetCentered()
 	{
-		centred = true;
+		centered = true;
 	}
-	void write(SDL_Event* event)
+	void Write(SDL_Event* event)
 	{
-		if (letters < maxlet)
+		if (letters < maxLetters)
 		{
 			text.append(event->text.text);
-			coord.w += lsize;
+			coordinates.w += letterSize;
 			letters++;
-			if (centred) setcenter(0);
-			crtexture();
+			if (centered) SetCenterOffset(0);
+			CreateTexture();
 		}
 	}
-	void backspace()
+	void DeleteSymbol()
 	{
 		if (text.length() > 0)
 		{
 			letters--;
 			text.pop_back();
-			coord.w -= lsize;
+			coordinates.w -= letterSize;
 			if (!text.empty() && (text[text.length() - 1] == -48 || text[text.length() - 1] == -47)) text.pop_back();
-			if (centred) setcenter(0);
-			crtexture();
+			if (centered) SetCenterOffset(0);
+			CreateTexture();
 		}
 	}
 };
 
-//Кнопки (кликабельные объекты)
-class button : public wwt
+class button : public textWindow
 {
 protected:
-	int index = 0;			//Номер кнопки
-	SDL_Texture* btexture;	//Текстура подложки для текста
-	SDL_Rect bcoord;		//Координаты подложки/кликабельная часть
-public:
-	button(string intext = "\0", int insize = 0, int x = 0, int y = 0, SDL_Renderer* inrender = NULL, SDL_Surface* insurface = NULL) : wwt(intext, insize, x, y, inrender, insurface)
+	int index = 0;			
+	SDL_Texture* bTexture;	
+	SDL_Rect bCoord;		
+	button(string newText = "\0", int newSize = 0, int x = 0, int y = 0, SDL_Renderer* newRenderer = NULL, SDL_Surface* newSurface = NULL) : textWindow(newText, newSize, x, y, newRenderer, newSurface)
 	{
-		btexture = NULL;
-		bcoord.x = x;
-		bcoord.y = y;
-		bcoord.w = coord.w;
-		bcoord.h = coord.h;
+		bTexture = NULL;
+		bCoord.x = x;
+		bCoord.y = y;
+		bCoord.w = coordinates.w;
+		bCoord.h = coordinates.h;
 	}
 	~button()
 	{
-		SDL_DestroyTexture(btexture);
+		SDL_DestroyTexture(bTexture);
 	}
-	void settexture(const char* texture, int w, int h)
+	void SetTexture(const char* texture, int w, int h)
 	{
-		btexture = IMG_LoadTexture(rend, texture);
-		bcoord = { bcoord.x, bcoord.y, w < coord.w ? coord.w : w, h < coord.h ? coord.h : h };
+		bTexture = IMG_LoadTexture(rend, texture);
+		bCoord = { bCoord.x, bCoord.y, w < coordinates.w ? coordinates.w : w, h < coordinates.h ? coordinates.h : h };
 	}
-	void setcenter(int x)
+	void SetCenterOffset(int x)
 	{
-		coord.x = HWW - coord.w / 2 + x;
-		bcoord.x = HWW - bcoord.w / 2 + x;
+		coordinates.x = HALF_WINDOW_WIDTH - coordinates.w / 2 + x;
+		bCoord.x = HALF_WINDOW_WIDTH - bCoord.w / 2 + x;
 	}
-	bool setindex(int iindex) //Функция получения индекса возвращает false если индеск не был присвоен (попытка присвоить 0вой или отрицательный индекс)
+	bool SetIndex(int newIndex) 
  	{
-		if (iindex < 0) return false;
-		index = iindex;
+		if (newIndex < 0) 
+			return false;
+		index = newIndex;
 		return true;
 	}
-	int getindex()
+	int GetIndex()
 	{
 		return index;
 	}
-	int getclick() //при нажатии возвращает индекс кнопки, в остальных случаях -1
+	int GetClick() 
 	{
 		int q, w;
 		SDL_GetMouseState(&q, &w);
-		if ((q > bcoord.x && w > bcoord.y) && (q < bcoord.x + bcoord.w && w < bcoord.y + bcoord.h))
+		if ((q > bCoord.x && w > bCoord.y) && (q < bCoord.x + bCoord.w && w < bCoord.y + bCoord.h))
 		{
-			cout << index << endl;
 			return index;
 		}
-		cout << -1 << endl;
 		return -1;
 	}
-	void setpart(int x, int y)
+	void SetPart(int x, int y)
 	{
 		if (part)
 		{
@@ -244,10 +228,10 @@ public:
 			part->y = y;
 		}
 	}
-	bool render(SDL_Renderer* rendering)
+	bool render(SDL_Renderer* renderer)
 	{
-		SDL_RenderCopy(rendering, btexture, part, &bcoord);
-		SDL_RenderCopy(rendering, texture, NULL, &coord);
+		SDL_RenderCopy(renderer, bTexture, part, &bCoord);
+		SDL_RenderCopy(renderer, texture, NULL, &coordinates);
 		return true;
 	}
 };

@@ -26,5 +26,8 @@
     <ClInclude Include="objects.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="constants.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

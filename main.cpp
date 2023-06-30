@@ -14,64 +14,51 @@
 #include "menu.h"
 
 
-#define WW 940 // ширина окна
-#define WH 730 // высота окна
-#define HWH 315 // половина высоты окна
-#define HWW 470 // половина ширины
-#define WL 345 // линия воды 
+#include"constants.h"
 
 using namespace std;
 
-//Указатель на окно
-SDL_Window* window = NULL;
-//Указатель на поверхность
-SDL_Surface* screenSurface = NULL;
-//Указатель на рендер
-SDL_Renderer* render = NULL;
-
+SDL_Window* window = NULL; // окно
+SDL_Surface* screenSurface = NULL; // рендер
+SDL_Renderer* render = NULL; // поврехность
 const Uint8* keys = SDL_GetKeyboardState(NULL);
 
-//Для организации списка лидеров
-typedef struct 
+typedef struct // структура^ data - списка результатов
 {
 	short int points;
 	string username;
-} sdata;
+} scoreData;
 
-typedef struct {
+typedef struct // результат игровой сессии
+{ 
 	short int scores;
-	string usrername;
+	string username;
 	bool quit;
-} info;
+} gameResults;
 
-//Функции
-//Запуск СДЛ
 bool start();
-//Создание нового объекта в реке
-ship* makenew(const char*[], const int[], SDL_Texture*);
-//Работа с файлом
-bool makefile(sdata**, int);
-sdata** readfile(int);
-bool showrecords(sdata**, staticgrafelem*);
+ship* MakeNewShip(const char*[], const int[], SDL_Texture*);
+bool MakeRecordsFile(scoreData**, int);
+scoreData** ReadRecordsFile(int);
+bool ShowRecords(scoreData**, staticGraficalElement*);
 
-//Игровые функции
-info startm();
-void menu(string, sdata**);
-info game();
+gameResults startm();
+void MainMenu(string, scoreData**);
+gameResults game();
 
 int main(int argc, char* argv[]) 
 {    
-	sdata** tlist = readfile(10);
+	scoreData** scoresList = ReadRecordsFile(10);
 	if (start())
 	{
 		printf("Failed to initialize!\n");
 		return 1;
 	}
-	info ufo;
-	ufo = startm(); //Cтартовое меню
+	gameResults ufo;
+	ufo = startm(); 
 	
-	if (ufo.quit) menu(ufo.usrername, tlist);
-	makefile(tlist, 10);
+	if (ufo.quit) MainMenu(ufo.username, scoresList);
+	MakeRecordsFile(scoresList, 10);
 	return 0;
 }
 
@@ -84,7 +71,7 @@ bool start()
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) return true;
 	if (TTF_Init() == -1) return true;
 
-	window = SDL_CreateWindow("Ships destroyer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WW, WH, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow("Ships destroyer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
 	if (window == NULL) return true;
 	render = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	if (render == NULL) return true;
@@ -93,8 +80,8 @@ bool start()
 	return false;
 }
 
-//Работа со списком рекордов
-bool makefile(sdata** dlist, int nop)
+
+bool MakeRecordsFile(scoreData** dlist, int nop)
 {
 	ofstream file("f.dat");
 	if (!file.is_open())
@@ -102,20 +89,19 @@ bool makefile(sdata** dlist, int nop)
 		cout << "Ошибка открытия файла" << endl;
 		return false;
 	}
-	cout << "DEBUGINFO" << endl;
 	for (int i = 0; i < nop && dlist[i]; i++)
 	{
 		file << dlist[i]->points;
 		file << dlist[i]->username;
 		file << " ";
-		cout << dlist[i]->points << " - " << dlist[i]->username << endl;
+		
 	}
 	file << "\n";
 	file.close();
 	return true;
 }
 
-sdata** readfile(int nop = 0)
+scoreData** ReadRecordsFile(int nop = 0)
 {
 	ifstream file("f.dat");
 	if (!file.is_open())
@@ -123,75 +109,70 @@ sdata** readfile(int nop = 0)
 		cout << "Ошибка чтения файла" << endl;
 		return NULL;
 	}
-	sdata** dlist = new sdata*[10];
+	scoreData** dlist = new scoreData*[10];
 	for (int i = 0; i < 10; i++)
 	{
 		dlist[i] = NULL;
 	}
-	cout << "DEBUGINFO" << endl;
+	
 	char tmp;
 	int i;
 	file >> i;
 	for (i = 0; i < nop && !file.eof(); i++)
 	{
 		tmp = '0';
-		dlist[i] = new sdata;
+		dlist[i] = new scoreData;
 		file >> dlist[i]->points;
 		for (int g = 0; g < 10 && tmp != ' ' && !file.eof(); g++)
 		{
 			file >> tmp;
 			if (tmp != ' ') dlist[i]->username.push_back(tmp);
 		}
-		cout << dlist[i]->points << " - " << dlist[i]->username << endl;
 	}
 	file.close();
 	return dlist;
 }
 
-void sortnadd(sdata** tlist, sdata tmp)
+void AddRecord(scoreData** scoresList, scoreData newData)
 {
-	sdata* tmp1 = new sdata;
-	tmp1->points = tmp.points;
-	tmp1->username = tmp.username;
+	scoreData* tmp1 = new scoreData;
+	tmp1->points = newData.points;
+	tmp1->username = newData.username;
 	int i = -1;
-	while (++i < 10 && tlist[i] && tlist[i]->points > tmp.points);
+	while (++i < 10 && scoresList[i] && scoresList[i]->points > newData.points);
 	if (i == 10) return;
-	sdata* temp = tlist[i];
-	tlist[i] = tmp1;
-	while (++i < 10 && tlist[i-1])
+	scoreData* temp = scoresList[i];
+	scoresList[i] = tmp1;
+	while (++i < 10 && scoresList[i-1])
 	{
-		tmp1 = tlist[i];
-		tlist[i] = temp;
+		tmp1 = scoresList[i];
+		scoresList[i] = temp;
 		temp = tmp1;
-	}
-	for (i = 0; i < 10 && tlist[i]; i++)
-	{
-		cout << i << " " << tlist[i]->username << endl;
 	}
 }
 
-bool showrecords(sdata** tlist, staticgrafelem* fon)
+bool ShowRecords(scoreData** scoresList, staticGraficalElement* background)
 {
-	staticgrafelem b({ HWW - 766 / 2, 100, 766, 492 }, "images/message.png", render);
+	staticGraficalElement b({ HALF_WINDOW_WIDTH - 766 / 2, 100, 766, 492 }, "images/message.png", render);
 	button exit("Назад", 50, 0, 490, render, screenSurface);
-	exit.setcolor({ 0,0,0 });
-	exit.setcenter(0);
+	exit.SetColor({ 0,0,0 });
+	exit.SetCenterOffset(0);
 
 	SDL_Event even;
 	string records;
 	int i = 0;
 	int j, r;
 	stringstream ss;
-	while (i < 10 && tlist[i])
+	while (i < 10 && scoresList[i])
 	{
-		for (r = j = 0; j < tlist[i]->username.length(); j++)
-			if (tlist[i]->username[j] == -47 || tlist[i]->username[j] == -48) r++;
-		ss << setw(2) << i << ". " << setw(10+r) << tlist[i]->username << " | " << tlist[i]->points << endl;
+		for (r = j = 0; j < scoresList[i]->username.length(); j++)
+			if (scoresList[i]->username[j] == -47 || scoresList[i]->username[j] == -48) r++;
+		ss << setw(2) << i << ". " << setw(10+r) << scoresList[i]->username << " | " << scoresList[i]->points << endl;
 		i++;
 	}
 	records = ss.str();
-	wwt rec(records, 17, HWW - 766 / 2 + 90, 155, render, screenSurface);
-	rec.setcolor({ 0,0,0 });
+	textWindow rec(records, 17, HALF_WINDOW_WIDTH - 766 / 2 + 90, 155, render, screenSurface);
+	rec.SetColor({ 0,0,0 });
 	bool quit = true,
 		start = true;
 	while (quit && start)
@@ -201,10 +182,10 @@ bool showrecords(sdata** tlist, staticgrafelem* fon)
 			if (even.type == SDL_QUIT) quit = false;
 			if (even.type == SDL_MOUSEBUTTONDOWN)
 			{
-				start = exit.getclick() == -1 ? start : false;
+				start = exit.GetClick() == -1 ? start : false;
 			}
 		}
-		fon->render(render);
+		background->render(render);
 		b.render(render);
 		rec.render(render);
 		exit.render(render);
@@ -216,63 +197,63 @@ bool showrecords(sdata** tlist, staticgrafelem* fon)
 	return quit;
 }
 
-bool showsprav(staticgrafelem* fon)
+bool ShowGuide(staticGraficalElement* background)
 {
 	bool quit = true;
 	bool start = true;
-	int vibor = -1;
+	int choose = -1;
 	SDL_Event event;
 	SDL_PollEvent(&event);
 
-	staticgrafelem b({ HWW - 766 / 2, 100, 766, 492 }, "images/message.png", render);
-	button** knopka;
-	knopka = new button*[3];
-	knopka[0] = new button("Назад", 50, 0, 490, render, screenSurface);
-	knopka[1] = new button("Правила", 50, 0, 200, render, screenSurface);
-	knopka[2] = new button("Справочник", 50, 0, 254, render, screenSurface);
+	staticGraficalElement b({ HALF_WINDOW_WIDTH - 766 / 2, 100, 766, 492 }, "images/message.png", render);
+	button** myButton;
+	myButton = new button*[3];
+	myButton[0] = new button("Назад", 50, 0, 490, render, screenSurface);
+	myButton[1] = new button("Правила", 50, 0, 200, render, screenSurface);
+	myButton[2] = new button("Справочник", 50, 0, 254, render, screenSurface);
 	int i;
 	for (i = 0; i < 3; i++)
 	{
-		knopka[i]->setcenter(0);
-		knopka[i]->setcolor({ 0,0,0 });
-		knopka[i]->setindex(i);
+		myButton[i]->SetCenterOffset(0);
+		myButton[i]->SetColor({ 0,0,0 });
+		myButton[i]->SetIndex(i);
 	}
-	wwt** texts = new wwt*[3];
-	texts[0] = new wwt("Шип дестроер", 50, 0, 143, render, screenSurface);
-	texts[1] = new wwt("", 16, HWW - 766 / 2 + 86, 192, render, screenSurface);
-	texts[2] = new button("", 10, HWW - 766 / 2 + 86, 192, render, screenSurface);
+	textWindow** texts = new textWindow*[3];
+	texts[0] = new textWindow("Шип дестроер", 50, 0, 143, render, screenSurface);
+	texts[1] = new textWindow("", 16, HALF_WINDOW_WIDTH - 766 / 2 + 86, 192, render, screenSurface);
+	texts[2] = new button("", 10, HALF_WINDOW_WIDTH - 766 / 2 + 86, 192, render, screenSurface);
 	
-	dynamic_cast<button*>(texts[2])->settexture("images/ships.png", 595, 300);
-	dynamic_cast<button*>(texts[2])->makeparted(595, 300);
+	dynamic_cast<button*>(texts[2])->SetTexture("images/ships.png", 595, 300);
+	dynamic_cast<button*>(texts[2])->SetRenderingPart(595, 300);
 
-	texts[0]->setcenter(0);
+	texts[0]->SetCenterOffset(0);
 	stringstream ss;
 	ss << "Цель игры: набрать наибольшее количество очков;\nОчки даются за уничтожение кораблей торпедами\n с подводной лодки,\n\n" <<
 		"Одновременно может быть запущена только одна торпеда.\n Корабли имеют разную стоимость от 1 до 3 очков,\n а также различаются по скорости.\n\n"<<
 		"Торпеда запускается на SPACE.\nПодводная лодка перемещается влево-вправо \nс помощью клавиш A и D\n\nНа стрельбу отведено 10 торпед.\n"<<
 		"Удачи" ;
-	texts[1]->settext(ss.str());
-	texts[1]->setmaxW(10);
+	texts[1]->SetText(ss.str());
+	texts[1]->SetMaxWidth(10);
 	
 	int y = 0;
 	while (quit && start)
 	{
-		fon->render(render);
+		background->render(render);
 		b.render(render);
 		while (SDL_PollEvent(&event))
 		{
 			if (event.type == SDL_QUIT)
 				quit = false;
 			if (event.type == SDL_MOUSEBUTTONDOWN)
-				if (vibor == -1)
+				if (choose == -1)
 					for (i = 0; i < 3; i++)
-						vibor = knopka[i]->getclick() == -1 ? vibor : knopka[i]->getindex();
+						choose = myButton[i]->GetClick() == -1 ? choose : myButton[i]->GetIndex();
 				else
 				{
-					vibor = knopka[0]->getclick() == -1 ? vibor : -1;
+					choose = myButton[0]->GetClick() == -1 ? choose : -1;
 					y = 0;
 				}
-			if (vibor == 2)
+			if (choose == 2)
 			{
 				if (event.type == SDL_MOUSEWHEEL)
 				{
@@ -280,15 +261,14 @@ bool showsprav(staticgrafelem* fon)
 						y = y - 15 * event.wheel.y >= 447 ? 447 : y - 15 * event.wheel.y;
 					else if (event.wheel.y > 0)
 						y = y - 15 * event.wheel.y <= 0 ? 0 : y - 15 * event.wheel.y;
-					cout << y << endl;
-					dynamic_cast<button*>(texts[2])->setpart(0, y);
+					dynamic_cast<button*>(texts[2])->SetPart(0, y);
 				}
 			}
 		}
-		knopka[0]->render(render);
+		myButton[0]->render(render);
 		texts[0]->render(render);
 		
-		switch (vibor)
+		switch (choose)
 		{
 		case 0:
 			start = false;
@@ -300,7 +280,7 @@ bool showsprav(staticgrafelem* fon)
 			break;
 		default:
 			for (i = 0; i < 3; i++)
-				knopka[i]->render(render);
+				myButton[i]->render(render);
 		}
 		SDL_RenderPresent(render);
 		SDL_RenderClear(render);
@@ -308,49 +288,49 @@ bool showsprav(staticgrafelem* fon)
 	}
 	for (i = 0; i < 3; i++)
 	{
-		delete knopka[i];
+		delete myButton[i];
 		delete texts[i];
 	}
-	delete[] knopka;
+	delete[] myButton;
 	delete[] texts;
 	return quit;
 }
 
-info entername(staticgrafelem* fon)
+gameResults entername(staticGraficalElement* background)
 {
 	button enter("введите имя", 30, 0, 200, render, screenSurface);
 	button truenter("готово", 30, 0, 361, render, screenSurface);
-	enter.settexture("images/message.png", 328, 207);
-	enter.setcenter(0);
-	enter.setY(208);
-	truenter.setcenter(0);
-	chatext nametest(36, 0, 280, render, screenSurface);
+	enter.SetTexture("images/message.png", 328, 207);
+	enter.SetCenterOffset(0);
+	enter.SetY(208);
+	truenter.SetCenterOffset(0);
+	dynamicTextWindow nametest(36, 0, 280, render, screenSurface);
 
-	nametest.setcolor({ 0,0,0 });
-	nametest.setcentred();
+	nametest.SetColor({ 0,0,0 });
+	nametest.SetCentered();
 	SDL_Event even;
 	
 	char vibor = -1;
 	bool quit = true,
-		 zalip = true, //Чтобы бэк спейс вызывался только один раз
+		 zalip = true, 
 		 start = true;
 	while (quit && start)
 	{
 		while (SDL_PollEvent(&even))
 		{
-			if (even.type == SDL_QUIT) { quit = false; nametest.settext("def"); }
+			if (even.type == SDL_QUIT) { quit = false; nametest.SetText("def"); }
 			if (even.type == SDL_MOUSEBUTTONDOWN)
 			{
-				vibor = enter.getclick();
-				start = truenter.getclick() == -1 || !nametest.getlength() ? start : false;
+				vibor = enter.GetClick();
+				start = truenter.GetClick() == -1 || !nametest.GetLength() ? start : false;
 			}
 			if (vibor != -1)
 			{
-				if (even.type == SDL_TEXTINPUT && !keys[SDL_SCANCODE_SPACE]) nametest.write(&even);
-				if (even.key.keysym.sym == SDLK_BACKSPACE) { if (zalip) nametest.backspace(); zalip = !zalip; }
+				if (even.type == SDL_TEXTINPUT && !keys[SDL_SCANCODE_SPACE]) nametest.Write(&even);
+				if (even.key.keysym.sym == SDLK_BACKSPACE) { if (zalip) nametest.DeleteSymbol(); zalip = !zalip; }
 			}
 		}
-		fon->render(render);
+		background->render(render);
 		enter.render(render);
 		nametest.render(render);
 		truenter.render(render);
@@ -359,20 +339,21 @@ info entername(staticgrafelem* fon)
 		SDL_RenderClear(render);
 		SDL_Delay(30);
 	}
-	return { 0, nametest.gettext(), quit };
+	return { 0, nametest.GetText(), quit };
 }
 
-info startm()
+gameResults startm()
 {
-	staticgrafelem zast({ 0,0,WW,WH }, "images/screenSaver.png", render); //Для заставки
+	staticGraficalElement zast({ 0,0,WINDOW_WIDTH,WINDOW_HEIGHT }, "images/screenSaver.png", render); //Для заставки
 	
-	wwt name("О727Б Виноградов С.Д.", 35, 4, WH - 50, render, screenSurface);
-	wwt title("Шипс дестроер", 60, 0, 20, render, screenSurface);
-	title.setcenter(0);
-	title.setcolor({ 0,0,0 });
-	name.setcolor({ 0,0,0 });
+	textWindow name("О727Б Виноградов С.Д.", 35, 4, WINDOW_HEIGHT - 50, render, screenSurface);
+	textWindow title("Шипс дестроер", 60, 0, 300, render, screenSurface);
+	title.SetCenterOffset(0);
+	title.SetColor({ 0,0,0 });
+	name.SetColor({ 0,0,0 });
+
 	
-	info dat;
+	gameResults dat;
 	dat.quit = true;
 	SDL_Event even;
 	char start = 2;
@@ -403,31 +384,24 @@ info startm()
 	return dat;
 }
 
-void menu(string nname, sdata** tlist)
+void MainMenu(string nname, scoreData** scoresList)
 {
-	//Фоны
-	staticgrafelem menufon({ 0,0,WW,WH }, "images/screenSaver.png", render);
-	//кнопки
-	button** knopka;
-	knopka = new button*[7];
-	// | 0. Назад
-	// | 1. Начало
-	// | 2. Справка
-	// | 3. Рекорды
-	// | 4. Настройки
-	// | 5. Смена игрока
-	// | 6. Выход
+	
+	staticGraficalElement menufon({ 0,0,WINDOW_WIDTH,WINDOW_HEIGHT }, "images/screenSaver.png", render);
+	//Кнопки
+	button** myButton;
+	myButton = new button*[7];
 
-	const char* buttontext[] = { "Назад", "Начало", "Справка", "Рекорды", "Смена игрока", "Выход"};
+	const char* buttonsText[] = { "Назад", "Начало", "Справка", "Рекорды", "Смена игрока", "Выход"};
 	for (int i = 0; i < 6; i++)
 	{
-		knopka[i] = new button(buttontext[i], 40, 20, 230 + 45 * i, render, screenSurface);
-		knopka[i]->setindex(i);
-		knopka[i]->setcolor({ 0,0,0 });
+		myButton[i] = new button(buttonsText[i], 40, 20, 230 + 45 * i, render, screenSurface);
+		myButton[i]->SetIndex(i);
+		myButton[i]->SetColor({ 0,0,0 });
 	}
 
-	sdata tmp = { 0, nname };
-	info f = {0, nname, true};
+	scoreData tmp = { 0, nname };
+	gameResults f = {0, nname, true};
 	bool quit = true;
 	bool start = true;
 	SDL_Event event;
@@ -445,64 +419,63 @@ void menu(string nname, sdata** tlist)
 			{
 				if (vibor != -1)
 				{
-					vibor = knopka[0]->getclick() == -1 ? vibor : knopka[0]->getindex();
+					vibor = myButton[0]->GetClick() == -1 ? vibor : myButton[0]->GetIndex();
 				}
 				for ( i = 1; i < 6 && vibor == -1; i++ )
 				{
-					vibor = knopka[i]->getclick() == -1 ? vibor : knopka[i]->getindex();
+					vibor = myButton[i]->GetClick() == -1 ? vibor : myButton[i]->GetIndex();
 				}
-				cout << vibor << endl;
 			}
 		}
 		switch (vibor)
 		{
 		case 5:
 			for (i = 0; i < 6; i++)
-				delete knopka[i];
-			delete[] knopka;
+				delete myButton[i];
+			delete[] myButton;
 			return;
 		case 2:
-			quit = showsprav(&menufon);
+			quit = ShowGuide(&menufon);
 			vibor = -1;
 			break;
 		case 3:
-			quit = showrecords(tlist, &menufon);
+			quit = ShowRecords(scoresList, &menufon);
 			vibor = -1;
 			break;
 		case 4:
 			f = entername(&menufon);
 			vibor = -1;
-			tmp.username = f.usrername;
+			tmp.username = f.username;
 			if (!f.quit) return;
 			break;
 		case 1:
 			f = game();
 			quit = f.quit;
 			tmp.points = f.scores;
-			sortnadd(tlist, tmp);
+			AddRecord(scoresList, tmp);
 			if (!f.quit) return;
 		}
 		menufon.render(render);
 		for (int i = 1; i < 6; i++)
-			knopka[i]->render(render);
+			myButton[i]->render(render);
 		vibor = -1;
 		SDL_RenderPresent(render);
 		SDL_RenderClear(render);
 		SDL_Delay(40);
 	}
 	for (i = 0; i < 6; i++)
-		delete knopka[i];
-	delete[] knopka;
+		delete myButton[i];
+	delete[] myButton;
 }
 
-//Создание нового объекта в реке, NULL - не создался
-ship* makenew(const char* types[], const int scores[], SDL_Texture* image)
+
+ship* MakeNewShip(const char* types[], const int scores[], SDL_Texture* image)
 {
 	char i = rand() % 100; //Для выбора создаваемого объекта
 	
 	bool naprav = rand() % 2; //Лево или право
 	char speed = 2 + rand() % 7; //скорость
-	int x = naprav ? -180 : WW;
+	int x = naprav ? -180 : WINDOW_WIDTH;
 	ship* q = NULL;
 	char vid = 0;
 	if (i < 30) vid = 0;
@@ -512,21 +485,21 @@ ship* makenew(const char* types[], const int scores[], SDL_Texture* image)
 	if (i >= 80 && i < 92) vid = 4;
 	if (i >= 92)
 	if (!(rand() % 3)) vid = 5;
-	SDL_Rect dest = { x, WL - 90, 180, 90 };
+	SDL_Rect dest = { x, WATER_LINE - 90, 180, 90 };
 	image = IMG_LoadTexture(render, types[vid]);
 	if (naprav) q = new Rship(dest, image, speed, scores[vid]);
 	else q = new Lship(dest, image, speed, scores[vid]);
 	return q;
 }
 
-info game()
+gameResults game()
 {
 	const char* files[] = { "images/ships/boat_s.png", "images/ships/boat_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/small_ship_s.png", "images/ships/ship_s.png" };
 	const int points[] = { 1,1,1,2,2,3};
 
-	staticgrafelem fon({ 0,0,WW,WH }, "images/background.png", render); //Для главной игры
-	staticgrafelem pausetex({ HWW - 125, 200, 250, 300 }, "textures/pause.png", render);
-	staticgrafelem peredfon({ 0, WH - 314, WW, 314 }, "textures/peredfon.png", render);
+	staticGraficalElement background({ 0,0,WINDOW_WIDTH,WINDOW_HEIGHT }, "images/background.png", render); //Для главной игры
+	staticGraficalElement pausetex({ HALF_WINDOW_WIDTH - 125, 200, 250, 300 }, "textures/pause.png", render);
+	staticGraficalElement peredfon({ 0, WINDOW_HEIGHT - 314, WINDOW_WIDTH, 314 }, "textures/peredfon.png", render);
 
 	SDL_Event event;
 	SDL_PollEvent(&event);
@@ -534,7 +507,7 @@ info game()
 	//Крюк игрока
 	SDL_Texture* test = NULL;
 	rocket* torpeda = new rocket(IMG_LoadTexture(render, "images/torpedo.png"), 30);
-	submarine* player = new submarine({HWW - 30, WL + 200, 90, 180}, IMG_LoadTexture(render, "images/oceanGateR.png"), 10); // создаём субмарину
+	submarine* player = new submarine({HALF_WINDOW_WIDTH - 30, WATER_LINE + 200, 90, 180}, IMG_LoadTexture(render, "images/oceanGateR.png"), 10); // создаём субмарину
 
 	bool quit = true;	//Флаг выхода
 	bool eflag = true;	//Флаг завершения игрового цикла
@@ -548,49 +521,49 @@ info game()
 	for (int i = 0; i < 15; i++)
 		g[i] = NULL;
 
-	wwt pauset("ПАУЗА", 40, 0, 210, render, screenSurface);
-	wwt scores("0", 40, 10, 20, render, screenSurface);			//Счёт 
-	wwt torpsText("Торпеды:", 40, 80, 20, render, screenSurface);
-	wwt torps("10", 40, 270, 20, render, screenSurface);			//торпеды
-	pauset.setcenter(0);
-	torpsText.setcolor({ 0,0,0 });
-	scores.setcolor({ 0, 0, 0 });
-	torps.setcolor({ 0,0,0 });
+	textWindow pauset("ПАУЗА", 40, 0, 210, render, screenSurface);
+	textWindow scores("0", 40, 10, 20, render, screenSurface);			//Счёт 
+	textWindow torpsText("Торпеды:", 40, 80, 20, render, screenSurface);
+	textWindow torps("10", 40, 270, 20, render, screenSurface);			//торпеды
+	pauset.SetCenterOffset(0);
+	torpsText.SetColor({ 0,0,0 });
+	scores.SetColor({ 0, 0, 0 });
+	torps.SetColor({ 0,0,0 });
 
 	//Кнопки
 	// 0. Пауза
 	// 2. Продолжить
 	// 3. Справка
 	// 4. Выход
-	button** knopka = new button*[5];
+	button** myButton = new button*[5];
 	const char* c[] = { "Продолжить", "Справка", "Выход" };
-	knopka[0] = new button("", 2, HWW + 400, 4, render, screenSurface);	//Кнопка паузы		
+	myButton[0] = new button("", 2, HALF_WINDOW_WIDTH + 400, 4, render, screenSurface);	//Кнопка паузы		
 	for (i = 0; i < 3; i++)
 	{
-		knopka[i + 2] = new button(c[i], 40, 0, 254 + 44 * i, render, screenSurface);
-		knopka[i + 2]->setcenter(0);
+		myButton[i + 2] = new button(c[i], 40, 0, 254 + 44 * i, render, screenSurface);
+		myButton[i + 2]->SetCenterOffset(0);
 	}
 
-	knopka[0]->settexture("textures/pb.png", 50, 50);
+	myButton[0]->SetTexture("textures/pb.png", 50, 50);
 
 	//игра
 	while (quit && eflag) 
 	{
-		fon.render(render);
+		background.render(render);
 		player->render(render);
-		if (torpeda->getlaunched()) // если торпеда запущена
+		if (torpeda->GetLaunched()) // если торпеда запущена
 		{
 			torpeda->render(render);// рисуем 
-			if(torpeda->moveU()) // двигаем
+			if(torpeda->MoveU()) // двигаем
 			{
 				torpedos--;
-				torps.settext(to_string(torpedos));
+				torps.SetText(to_string(torpedos));
 
 				if (torpedos > 0) // если ещё есть торпеды
 				{
-					torpeda->setY(WH - 225);
-					torpeda->setlaunched(false);
-					torpeda->setzacep(false);
+					torpeda->setY(WINDOW_HEIGHT - 225);
+					torpeda->SetLaunched(false);
+					torpeda->SetCollision(false);
 				}
 			}
 		}
@@ -598,12 +571,12 @@ info game()
 			torpeda->setX(player->getX());
 
 		
-		knopka[0]->render(render);
+		myButton[0]->render(render);
 		torpsText.render(render);
 		scores.render(render);
 		torps.render(render);
 		eflag = eflag ? torpedos>0 : eflag;
-		//обработка событий (нажатий клавиш и т.п.)
+		
 		while (SDL_PollEvent(&event)) 
 		{
 			if (event.type == SDL_QUIT)
@@ -613,18 +586,18 @@ info game()
 				if (keys[SDL_SCANCODE_RETURN]) {  paused = true; }
 				if (!paused)
 				{
-					if (keys[SDL_SCANCODE_SPACE]) // если нажали ENTER
+					if (keys[SDL_SCANCODE_SPACE]) // если нажали SPACE
 					{
-						if(!torpeda->getlaunched()) // если торпеда не летит
-							torpeda->moveU(); // запускаем
+						if(!torpeda->GetLaunched()) // если торпеда не летит
+							torpeda->MoveU(); // запускаем
 					}
 					if(keys[SDL_SCANCODE_D])
 					{
-						player->moveR();
+						player->MoveR();
 					}
 					if (keys[SDL_SCANCODE_A])
 					{
-						player->moveL();
+						player->MoveL();
 					}
 				}
 			}
@@ -632,49 +605,49 @@ info game()
 			{
 				if (!paused) // поставить на паузу
 				{
-					if (knopka[0]->getclick() != -1)  paused = true;
+					if (myButton[0]->GetClick() != -1)  paused = true;
 				}
 				else
 				{
-					eflag = knopka[4]->getclick() == -1 ? eflag : false;
-					if (knopka[2]->getclick() != -1)  paused = false;
-					if (knopka[3]->getclick() != -1) {showsprav(&fon); fon.render(render);}
+					eflag = myButton[4]->GetClick() == -1 ? eflag : false;
+					if (myButton[2]->GetClick() != -1)  paused = false;
+					if (myButton[3]->GetClick() != -1) {ShowGuide(&background); background.render(render);}
 				}
 			}
 		}
-		//Движение кораблей, их создание, поимка и отрисовка
+		//Обработка кораблей
 		if (!paused)
 		{
 			for (i = 0; i < 10; i++)
 			{
 				if (g[i] == NULL) // если корабля нет
 				{
-					if (rand() % 900 == 1) g[i] = makenew(files, points, test); //Создание нового корабля
+					if (rand() % 900 == 1) g[i] = MakeNewShip(files, points, test); //Создание нового корабля
 				}
 				else //если корабль есть
 				{
 					g[i]->render(render); //отрисовка
-					fflag = g[i]->move( torpeda->getX(), torpeda->getY(),torpeda->getW(), torpeda->getH(), torpeda->getspeed(), torpeda->getzac()); //Движение корабля // +29
+					fflag = g[i]->Move( torpeda->getX(), torpeda->getY(),torpeda->getW(), torpeda->getH(), torpeda->GetSpeed(), torpeda->GetCollision()); //Движение корабля // +29
 					if (fflag == -1) //проверка на уничтожение
 					{
-						torpeda->setzacep(true);
+						torpeda->SetCollision(true);
 					}
 					if (fflag == 0 || fflag == -1) //проверка на уход за край/ подсчёт очков
 					{
 						
 						tmp = score;
-						score += g[i]->getpoint(); // получаем очки, если есть корабль hooked
-						scores.settext(to_string(score));
+						score += g[i]->GetPoint(); // получаем очки, если есть корабль touched
+						scores.SetText(to_string(score));
 						if (score != tmp)
 						{
 							torpedos--; // уменьшаем счётчик
-							torps.settext(to_string(torpedos));
+							torps.SetText(to_string(torpedos));
 							
 							if (torpedos > 0) // если ещё есть торпеды
 							{
-								torpeda->setY(WH - 225);
-								torpeda->setlaunched(false);
-								torpeda->setzacep(false);
+								torpeda->setY(WINDOW_HEIGHT - 225);
+								torpeda->SetLaunched(false);
+								torpeda->SetCollision(false);
 							}
 						}
 						delete g[i];
@@ -688,7 +661,7 @@ info game()
 			pausetex.render(render);
 			pauset.render(render);
 			for (i = 2; i < 5; i++)
-				knopka[i]->render(render);
+				myButton[i]->render(render);
 		}
 		peredfon.render(render);
 		SDL_RenderPresent(render);
@@ -698,12 +671,10 @@ info game()
 	}
 	SDL_DestroyTexture(test);
 	SDL_SetRenderDrawColor(render, 0, 0, 0, 0);
-
-	//staticgrafelem efon({ HWW - 766 / 2, 100, 766, 492 }, efiles[i], render); // картинка после победы
-	wwt escore(to_string(score), 40, 0, 492, render, screenSurface);	//Счёт
-	wwt logo("Отличная игра", 40, 0, 600, render, screenSurface);		//Подбадривающая надпись
-	escore.setcenter(0);
-	logo.setcenter(0);
+	textWindow escore(to_string(score), 40, 0, 492, render, screenSurface);	
+	textWindow logo("Отличная игра", 40, 0, 600, render, screenSurface);
+	escore.SetCenterOffset(0);
+	logo.SetCenterOffset(0);
 	eflag = true;
 	while (quit && eflag)
 	{
@@ -714,7 +685,7 @@ info game()
 			if (event.type == SDL_MOUSEBUTTONDOWN)
 				eflag = false;
 		}
-		fon.render(render);
+		background.render(render);
 		peredfon.render(render);
 		//efon.render(render);
 		escore.render(render);
