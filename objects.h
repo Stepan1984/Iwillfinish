@@ -44,7 +44,7 @@ public:
 	}
 };
 
-class dynamicElement //Базовый класс "управляемо перемещаемый по экрану элемент"
+class dynamicElement 
 {
 protected:
 	SDL_Rect coordinates;
@@ -70,31 +70,35 @@ public:
 		texture = other.texture;
 		speed = other.speed;
 	}
-	void set_speed(int newSpeed)
+	void SetSpeed(int newSpeed)
 	{
 		speed = newSpeed;
 	}
-	void setY(int y)
+	int GetSpeed()
+	{
+		return speed;
+	}
+	void SetY(int y)
 	{
 		coordinates.y = y;
 	}
-	void setX(int x)
+	void SetX(int x)
 	{
 		coordinates.x = x;
 	}
-	int getY()
+	int GetY()
 	{
 		return coordinates.y;
 	}
-	int getX()
+	int GetX()
 	{
 		return coordinates.x;
 	}
-	int getW()
+	int GetW()
 	{
 		return coordinates.w;
 	}
-	int getH()
+	int GetH()
 	{
 		return coordinates.h;
 	}
@@ -141,13 +145,13 @@ class Rship : public ship //корабль, плывущий направо
 {
 public:
 
-	Rship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * exem = NULL, int sp = 0, int point = 0)
+	Rship(SDL_Rect c = { 0, 0, 100, 100 }, SDL_Texture * newTexture = NULL, int newSpeed = 0, int newPoints = 0)
 	{
 		touched = false;
 		coordinates = c;
-		texture = exem;
-		speed = sp;
-		points = point;
+		texture = newTexture;
+		speed = newSpeed;
+		points = newPoints;
 		part = {180, 0, 180, 90}; 
 	}
 	 ~Rship()
@@ -175,13 +179,13 @@ class Lship : public ship // корабль, плывущий налево
 {
 public:
 
-	Lship(SDL_Rect c = { 0, 0, 100, 100}, SDL_Texture* exem = NULL, int sp = 0, int point = 0)
+	Lship(SDL_Rect c = { 0, 0, 100, 100}, SDL_Texture* newTexture = NULL, int newSpeed = 0, int newPoints = 0)
 	{
 		touched = false;
 		coordinates = c;
-		texture = exem;
-		speed = sp;
-		points = point;
+		texture = newTexture;
+		speed = newSpeed;
+		points = newPoints;
 		part = { 0, 0, 180, 90};
 	}
 	 ~Lship()
@@ -271,10 +275,7 @@ public:
 		return collision;
 	}
 
-	int GetSpeed()
-	{
-		return speed;
-	}
+	
 };
 
 class submarine: public dynamicElement

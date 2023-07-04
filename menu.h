@@ -177,6 +177,7 @@ protected:
 	int index = 0;			
 	SDL_Texture* bTexture;	
 	SDL_Rect bCoord;		
+public:
 	button(string newText = "\0", int newSize = 0, int x = 0, int y = 0, SDL_Renderer* newRenderer = NULL, SDL_Surface* newSurface = NULL) : textWindow(newText, newSize, x, y, newRenderer, newSurface)
 	{
 		bTexture = NULL;
